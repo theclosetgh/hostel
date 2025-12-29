@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LIN MART EXECUTIVE HOSTEL — Booking & Admin</title>
+  <meta name="description" content="LIN MART EXECUTIVE HOSTEL booking system with room allocation, gender-based sharing, admin pairing, WhatsApp, and EmailJS confirmations (no PHP)." />
+
+  <!-- EmailJS (NO PHP / NO BACKEND) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:rgba(255,255,255,.06);
+      --panel2:rgba(255,255,255,.04);
+      --text:#eaf1ff;
+      --muted:#a9b7d6;
+      --line:rgba(255,255,255,.10);
+      --shadow:0 12px 34px rgba(0,0,0,.45);
+      --radius:18px;
+      --radius2:14px;
+      --accent:#7c5cff;
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 650px at 15% 10%, rgba(124,92,255,.20), transparent 45%),
+        radial-gradient(900px 560px at 90% 0%, rgba(34,197,94,.16), transparent 40%),
+        var(--bg);
+      line-height:1.45;
+    }
+    .wrap{max-width:1180px; margin:0 auto; padding:26px 16px 56px;}
+    header{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:8px 0 18px;}
+    .brand h1{margin:0; font-size:20px; letter-spacing:.3px}
+    .brand p{margin:8px 0 0; color:var(--muted); font-size:13px; max-width:860px}
+    .tabs{
+      display:flex; gap:8px; padding:6px;
+      border:1px solid var(--line);
+      background:var(--panel2);
+      border-radius:999px;
+      box-shadow:var(--shadow);
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .tabbtn{
+      border:none; cursor:pointer;
+      padding:10px 12px; border-radius:999px;
+      background:transparent; color:var(--muted);
+      font-weight:900; font-size:13px; letter-spacing:.2px;
+    }
+    .tabbtn.active{background:linear-gradient(90deg, var(--accent), #4cc3ff); color:#071018;}
+
+    .grid{display:grid; grid-template-columns: 1.18fr .82fr; gap:18px; align-items:start;}
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, var(--panel), rgba(255,255,255,.03));
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .head{ padding:18px 18px 0; }
+    .head h2{ margin:0; font-size:16px; letter-spacing:.25px; }
+    .head p{ margin:8px 0 0; color:var(--muted); font-size:13px; }
+
+    .rooms{padding:18px; display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px;}
+    @media (max-width: 740px){ .rooms{ grid-template-columns:1fr; } }
+    .room{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+      border-radius:var(--radius2);
+      padding:14px;
+      display:flex; flex-direction:column; gap:10px;
+      min-height:170px;
+    }
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      width:max-content;
+    }
+    .price{ font-size:22px; font-weight:900; letter-spacing:.2px; }
+    .sub{ color:var(--muted); font-size:12px; margin-top:-6px; }
+    .avail{
+      margin-top:auto;
+      display:flex; justify-content:space-between; gap:10px;
+      border-top:1px dashed rgba(255,255,255,.14);
+      padding-top:10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .avail strong{ color:var(--text); }
+
+    .toast{
+      display:none;
+      margin:14px 18px 0;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(34,197,94,.12);
+      color:#d7ffe6;
+      font-size:13px;
+      white-space:pre-wrap;
+    }
+    .toast.error{ background:rgba(239,68,68,.12); color:#ffe0e0; }
+
+    form{ padding:18px; display:grid; gap:14px; }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width: 640px){ .row{ grid-template-columns:1fr; } }
+    label{ display:block; font-size:12px; color:var(--muted); margin:0 0 6px; }
+    input, select, textarea{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.24);
+      color:var(--text);
+      outline:none;
+      transition:border .15s ease, box-shadow .15s ease;
+    }
+    textarea{ min-height:92px; resize:vertical; }
+    input:focus, select:focus, textarea:focus{
+      border-color:rgba(124,92,255,.7);
+      box-shadow:0 0 0 4px rgba(124,92,255,.18);
+    }
+
+    .summary{padding:18px; border-top:1px solid var(--line); display:grid; gap:10px;}
+    .kv{
+      display:flex; justify-content:space-between; gap:12px;
+      padding:10px 12px;
+      border:1px dashed rgba(255,255,255,.14);
+      border-radius:14px;
+      background:rgba(0,0,0,.12);
+      color:var(--muted);
+      font-size:13px;
+    }
+    .kv strong{ color:var(--text); font-weight:900; }
+
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+    button{
+      cursor:pointer; border:none;
+      padding:12px 14px;
+      border-radius:14px;
+      font-weight:900;
+      letter-spacing:.2px;
+      display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    }
+    .btn-primary{ background:linear-gradient(90deg, var(--accent), #4cc3ff); color:#071018; }
+    .btn-ghost{ background:rgba(255,255,255,.06); color:var(--text); border:1px solid var(--line); }
+    .btn-danger{ background:rgba(239,68,68,.16); color:#ffe0e0; border:1px solid rgba(239,68,68,.30); }
+    .btn-warn{ background:rgba(245,158,11,.14); color:#fff1d6; border:1px solid rgba(245,158,11,.30); }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+    .note{ color:var(--muted); font-size:12px; padding:0 18px 18px; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .adminWrap{ padding:18px; }
+    .adminToolbar{
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+      padding:14px; border-bottom:1px solid var(--line);
+    }
+    .adminToolbar input, .adminToolbar select{
+      border-radius:12px; border:1px solid var(--line);
+      background:rgba(0,0,0,.24); color:var(--text);
+      padding:10px 12px; outline:none;
+    }
+    .adminToolbar input{ flex:1; min-width:240px; }
+
+    .kpis{padding:14px; display:flex; gap:10px; flex-wrap:wrap;}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:999px;
+      padding:6px 10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .pill.good{ border-color:rgba(34,197,94,.30); background:rgba(34,197,94,.10); color:#d7ffe6; }
+    .pill.warn{ border-color:rgba(245,158,11,.35); background:rgba(245,158,11,.10); color:#fff1d6; }
+    .pill.bad{ border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.10); color:#ffe0e0; }
+    .pill.info{ border-color:rgba(124,92,255,.35); background:rgba(124,92,255,.10); color:#eae5ff; }
+
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ padding:12px 12px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13px; }
+    th{ text-align:left; color:var(--muted); font-weight:900; font-size:12px; letter-spacing:.25px; }
+    tr:hover td{ background:rgba(255,255,255,.03); }
+
+    .statusPill{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .statusPill.good{ border-color:rgba(34,197,94,.30); background:rgba(34,197,94,.10); color:#d7ffe6; }
+    .statusPill.warn{ border-color:rgba(245,158,11,.35); background:rgba(245,158,11,.10); color:#fff1d6; }
+    .statusPill.bad{ border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.10); color:#ffe0e0; }
+    .statusPill.info{ border-color:rgba(124,92,255,.35); background:rgba(124,92,255,.10); color:#eae5ff; }
+
+    .hide{ display:none !important; }
+    footer{ margin-top:18px; color:var(--muted); font-size:12px; text-align:center; opacity:.9; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>LIN MART EXECUTIVE HOSTEL</h1>
+        <p>
+          Book a room and receive email confirmation. When allocated, you’ll get another email with room number, building/floor, roommates (if shared), and bank payment details.
+          <br><span class="mono">Static (no-PHP) version: bookings are saved in this browser.</span>
+        </p>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Switch view">
+        <button class="tabbtn active" id="tabBooking" type="button" role="tab" aria-selected="true">Booking</button>
+        <button class="tabbtn" id="tabAdmin" type="button" role="tab" aria-selected="false">Admin</button>
+      </div>
+    </header>
+
+    <!-- BOOKING -->
+    <section id="viewBooking">
+      <div class="grid">
+        <section class="card">
+          <div class="head">
+            <h2>Room Types, Pricing & Availability</h2>
+            <p>Sharing is gender-based (girls with girls, boys with boys). Admin can also pair roommates.</p>
+          </div>
+
+          <div class="rooms">
+            <div class="room">
+              <div class="tag">1 in a room</div>
+              <div class="price">GHS 14,000</div>
+              <div class="sub">Single Building • 2 floors • 6 rooms each floor (12 rooms total)</div>
+              <div class="avail"><span>Available spaces</span><strong id="av1">—</strong></div>
+            </div>
+            <div class="room">
+              <div class="tag">2 in a room</div>
+              <div class="price">GHS 7,000</div>
+              <div class="sub">Main Building • 3 floors • 8 rooms each floor (24 rooms total)</div>
+              <div class="avail"><span>Available spaces</span><strong id="av2">—</strong></div>
+            </div>
+            <div class="room">
+              <div class="tag">3 in a room</div>
+              <div class="price">GHS 5,500</div>
+              <div class="sub">Main Building • Floors 1–2 • Rooms 09–11 (6 rooms total)</div>
+              <div class="avail"><span>Available spaces</span><strong id="av3">—</strong></div>
+            </div>
+          </div>
+
+          <div class="note">
+            <strong>Bank payment details:</strong><br/>
+            Account Name: <span class="mono">LIN MART EXECUTIVE HOSTEL</span><br/>
+            Account Number: <span class="mono">1621180004574</span><br/>
+            Bank: <span class="mono">GCB</span>, Branch: <span class="mono">HAATSO BRANCH</span><br/>
+            <br/>
+            <strong>Instruction:</strong> After allocation, pay into the account and keep your receipt/transaction reference.
+          </div>
+        </section>
+
+        <aside class="card">
+          <div class="head">
+            <h2>Book a Room</h2>
+            <p>Email is required so we can send confirmation and allocation details.</p>
+          </div>
+
+          <div id="toastBooking" class="toast" role="status" aria-live="polite"></div>
+
+          <form id="bookingForm" autocomplete="on" novalidate>
+            <div class="row">
+              <div>
+                <label for="fullName">Full name</label>
+                <input id="fullName" name="fullName" type="text" placeholder="e.g., Edric Atebi" required minlength="2" />
+              </div>
+              <div>
+                <label for="phone">Phone number</label>
+                <input id="phone" name="phone" type="tel" placeholder="e.g., 024 000 0000" required />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="email">Email (required)</label>
+                <input id="email" name="email" type="email" placeholder="e.g., you@example.com" required />
+              </div>
+              <div>
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender" required>
+                  <option value="" selected disabled>Select gender</option>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="school">School / Institution</label>
+                <input id="school" name="school" type="text" placeholder="e.g., University of ..." required />
+              </div>
+              <div>
+                <label for="roomType">Room type</label>
+                <select id="roomType" name="roomType" required>
+                  <option value="" selected disabled>Select a room type</option>
+                  <option value="1">1 in a room — GHS 14,000</option>
+                  <option value="2">2 in a room — GHS 7,000</option>
+                  <option value="3">3 in a room — GHS 5,500</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="moveIn">Preferred move-in date</label>
+                <input id="moveIn" name="moveIn" type="date" required />
+              </div>
+              <div>
+                <label for="duration">Duration</label>
+                <select id="duration" name="duration" required>
+                  <option value="1" selected>1 semester / term</option>
+                  <option value="2">2 semesters / full year</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label for="notes">Notes (optional)</label>
+              <textarea id="notes" name="notes" placeholder="Any special request?"></textarea>
+            </div>
+
+            <div class="actions">
+              <button id="submitBtn" class="btn-primary" type="button">Submit Booking</button>
+              <button id="resetBtn" class="btn-ghost" type="button">Reset</button>
+            </div>
+          </form>
+
+          <div class="summary">
+            <div class="kv"><span>Selected room</span><strong id="sumRoom">—</strong></div>
+            <div class="kv"><span>Price</span><strong id="sumRoomPrice">—</strong></div>
+            <div class="kv"><span>Gender</span><strong id="sumGender">—</strong></div>
+            <div class="kv"><span>Availability (gender-based)</span><strong id="sumAvail">—</strong></div>
+          </div>
+
+          <div class="note">
+            Emails are sent using your EmailJS templates:
+            <span class="mono">template_lkwqlmo</span> (booking received) and
+            <span class="mono">template_pp7xixk</span> (booking allocated).
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="viewAdmin" class="hide">
+      <div class="card">
+        <div class="head">
+          <h2>Admin Dashboard</h2>
+          <p>Allocate rooms, mark paid, release rooms, WhatsApp students, pair roommates, and resend emails.</p>
+        </div>
+
+        <div id="toastAdmin" class="toast" role="status" aria-live="polite"></div>
+
+        <div id="adminLogin" class="adminWrap">
+          <div class="row">
+            <div>
+              <label for="adminUser">Username</label>
+              <input id="adminUser" type="text" value="admin" autocomplete="username" />
+            </div>
+            <div>
+              <label for="adminPass">Password</label>
+              <input id="adminPass" type="password" placeholder="Enter password" autocomplete="current-password" />
+            </div>
+          </div>
+          <div class="actions" style="margin-top:12px;">
+            <button id="loginBtn" class="btn-primary" type="button">Sign in</button>
+            <button id="seedBtn" class="btn-ghost" type="button">Load sample bookings</button>
+          </div>
+          <div class="note" style="padding:12px 0 0;">
+            Demo password is <span class="mono">admin123</span>. Change it before publishing.
+          </div>
+        </div>
+
+        <div id="adminPanel" class="hide">
+          <div class="adminToolbar">
+            <input id="search" type="search" placeholder="Search name, phone, email, school..." />
+            <select id="filterRoom">
+              <option value="">All room types</option>
+              <option value="1">1 in a room</option>
+              <option value="2">2 in a room</option>
+              <option value="3">3 in a room</option>
+            </select>
+            <select id="filterGender">
+              <option value="">All genders</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+            </select>
+            <select id="filterStatus">
+              <option value="">All status</option>
+              <option value="allocated">Allocated</option>
+              <option value="waitlist">Waitlist</option>
+              <option value="paid">Paid (confirmed)</option>
+              <option value="rejected">Rejected</option>
+            </select>
+
+            <button class="btn-danger" id="clearBtn" type="button">Clear all</button>
+            <button class="btn-primary" id="logoutBtn" type="button">Logout</button>
+          </div>
+
+          <div class="kpis">
+            <span class="pill">Total: <strong id="kTotal">0</strong></span>
+            <span class="pill info">Allocated: <strong id="kAllocated">0</strong></span>
+            <span class="pill warn">Waitlist: <strong id="kWaitlist">0</strong></span>
+            <span class="pill good">Paid: <strong id="kPaid">0</strong></span>
+            <span class="pill bad">Rejected: <strong id="kRejected">0</strong></span>
+          </div>
+
+          <div class="note" style="padding-top:0;">
+            Available spaces: 1-in: <strong id="a1Admin">—</strong> • 2-in: <strong id="a2Admin">—</strong> • 3-in: <strong id="a3Admin">—</strong>
+          </div>
+
+          <div style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Student</th>
+                  <th>Gender</th>
+                  <th>Room Type</th>
+                  <th>Allocation</th>
+                  <th>Roommates</th>
+                  <th>Move-in</th>
+                  <th>Status</th>
+                  <th style="min-width:620px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="note">
+            Static demo: data is saved in this browser only (localStorage).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>© <span id="year"></span> LIN MART EXECUTIVE HOSTEL</footer>
+  </div>
+
+  <script>
+    /* =========================================================
+      EMAILJS (YOUR REAL KEYS + TEMPLATE IDs)
+    ========================================================= */
+    const EMAIL = {
+      publicKey: "u7PnlhwIw05D-Rqh9",
+      serviceId: "service_agply6t",
+      tplBooking: "template_lkwqlmo",   // Booking Received
+      tplAllocated: "template_pp7xixk"  // Booking Accepted / Allocated
+    };
+
+    if (window.emailjs && EMAIL.publicKey) {
+      emailjs.init(EMAIL.publicKey);
+    }
+
+    async function sendEmail(templateId, params){
+      try{
+        if (!window.emailjs) return;
+        await emailjs.send(EMAIL.serviceId, templateId, params);
+      } catch (e){
+        console.error("Email failed:", e);
+      }
+    }
+
+    /* ================= CONFIG ================= */
+    const STORAGE_KEY = "linmart_booking_system_v1_static";
+
+    const PRICES = { "1": 14000, "2": 7000, "3": 5500 };
+
+    const BANK = {
+      accountName: "LIN MART EXECUTIVE HOSTEL",
+      accountNumber: "1621180004574",
+      bank: "GCB",
+      branch: "HAATSO BRANCH"
+    };
+
+    const ADMIN_USER = "admin";
+    const ADMIN_PASS = "admin123"; // change before publish
+
+    const MAIN_BUILDING = "Main Building";
+    const SINGLE_BUILDING = "Single Building";
+
+    // Your exact requirement:
+    // - 1-in-room: own building, 2 floors, 6 rooms each floor = 12 rooms
+    // - 2-in-room: 8 rooms each floor x3 floors = 24 rooms
+    // - 3-in-room: 3 rooms on each of floor 1 and 2 = 6 rooms
+    const ROOM_SETUP = {
+      "1": {
+        building: SINGLE_BUILDING,
+        floors: [1, 2],
+        roomsPerFloor: { 1:["01","02","03","04","05","06"], 2:["01","02","03","04","05","06"] },
+        capacity: 1
+      },
+      "2": {
+        building: MAIN_BUILDING,
+        floors: [1, 2, 3],
+        roomsPerFloor: {
+          1:["01","02","03","04","05","06","07","08"],
+          2:["01","02","03","04","05","06","07","08"],
+          3:["01","02","03","04","05","06","07","08"]
+        },
+        capacity: 2
+      },
+      "3": {
+        building: MAIN_BUILDING,
+        floors: [1, 2],
+        roomsPerFloor: { 1:["09","10","11"], 2:["09","10","11"] },
+        capacity: 3
+      }
+    };
+
+    /* ================= HELPERS ================= */
+    const $ = (id) => document.getElementById(id);
+    const pad2 = (n) => String(n).padStart(2,"0");
+
+    function formatGHS(n){ return "GHS " + Number(n).toLocaleString("en-GH"); }
+    function roomLabel(v){ return v==="1"?"1 in a room":v==="2"?"2 in a room":v==="3"?"3 in a room":"—"; }
+    function genderLabel(g){ return g==="female"?"Female":g==="male"?"Male":"—"; }
+    function todayISO(){
+      const d = new Date(); d.setHours(0,0,0,0);
+      return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    }
+    function escapeHtml(str){
+      return String(str ?? "").replace(/[&<>"']/g, (m)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+    }
+    function fmtDateTime(iso){
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso || "—";
+      return d.toLocaleString(undefined, { year:"numeric", month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+    function showToast(where, msg, type="success"){
+      const t = where==="admin" ? $("toastAdmin") : $("toastBooking");
+      t.className = "toast" + (type==="error" ? " error" : "");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=>{ t.style.display="none"; }, 6500);
+    }
+
+    function normalizeGHForWa(phoneRaw){
+      let p = String(phoneRaw||"").trim().replace(/[^\d+]/g,"");
+      if (!p) return "";
+      if (p.startsWith("+")) p = p.slice(1);
+      if (/^0\d{9}$/.test(p)) return "233"+p.slice(1);
+      if (/^\d{9}$/.test(p)) return "233"+p;
+      if (/^233\d{9}$/.test(p)) return p;
+      return p.replace(/\D/g,"");
+    }
+    function waLink(phoneRaw, message){
+      const wa = normalizeGHForWa(phoneRaw);
+      if (!wa) return "";
+      return `https://wa.me/${wa}?text=${encodeURIComponent(message||"")}`;
+    }
+
+    /* ================= STATE ================= */
+    function defaultRooms(){
+      const rooms = { "1": {}, "2": {}, "3": {} };
+
+      for (const type of ["1","2","3"]){
+        const cfg = ROOM_SETUP[type];
+        for (const floor of cfg.floors){
+          const list = cfg.roomsPerFloor[floor] || [];
+          for (const no of list){
+            const key = `${cfg.building}|F${floor}|R${no}`;
+            rooms[type][key] = {
+              gender: null,
+              occupants: [],
+              meta: { building: cfg.building, floor, roomNo: no, capacity: cfg.capacity }
+            };
+          }
+        }
+      }
+      return rooms;
+    }
+
+    function readState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : null;
+        if (parsed && typeof parsed === "object"){
+          if (!parsed.rooms) parsed.rooms = defaultRooms();
+          if (!parsed.bookings) parsed.bookings = [];
+          return parsed;
+        }
+      } catch {}
+      return { rooms: defaultRooms(), bookings: [] };
+    }
+    function saveState(state){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      refreshAvailabilityUI();
+      if ($("adminPanel") && !$("adminPanel").classList.contains("hide")) renderAdmin();
+    }
+    function makeId(){ return "bk_" + Math.random().toString(36).slice(2) + "_" + Date.now(); }
+    function getBookingById(state, id){ return state.bookings.find(b => String(b.id) === String(id)); }
+
+    /* ================= AVAILABILITY ================= */
+    function availableSpacesAll(type){
+      const s = readState();
+      let spaces = 0;
+      for (const key in s.rooms[type]){
+        const r = s.rooms[type][key];
+        spaces += Math.max(0, r.meta.capacity - (r.occupants?.length || 0));
+      }
+      return spaces;
+    }
+    function availableSpacesGender(type, gender){
+      const s = readState();
+      let spaces = 0;
+      for (const key in s.rooms[type]){
+        const r = s.rooms[type][key];
+        if (r.gender && r.gender !== gender) continue;
+        spaces += Math.max(0, r.meta.capacity - (r.occupants?.length || 0));
+      }
+      return spaces;
+    }
+    function refreshAvailabilityUI(){
+      $("av1").textContent = availableSpacesAll("1");
+      $("av2").textContent = availableSpacesAll("2");
+      $("av3").textContent = availableSpacesAll("3");
+
+      $("a1Admin").textContent = availableSpacesAll("1");
+      $("a2Admin").textContent = availableSpacesAll("2");
+      $("a3Admin").textContent = availableSpacesAll("3");
+    }
+
+    /* ================= ROOMMATES ================= */
+    function syncRoommatesInRoom(state, type, roomKey){
+      const room = state.rooms[type]?.[roomKey];
+      if (!room) return;
+      const ids = room.occupants || [];
+      for (const id of ids){
+        const b = getBookingById(state, id);
+        if (!b) continue;
+        b.roommates = ids
+          .filter(x => String(x) !== String(id))
+          .map(x => getBookingById(state, x))
+          .filter(Boolean)
+          .map(x => x.fullName);
+      }
+    }
+
+    function allocationText(b){
+      if (!b.allocatedRoomKey) return "—";
+      return `${b.building} — Floor ${b.floor} — Room ${b.allocatedRoom}`;
+    }
+
+    /* ================= ALLOCATION ================= */
+    function findRoomKey(state, type, gender){
+      const rooms = state.rooms[type];
+      const keys = Object.keys(rooms).sort((a,b)=>a.localeCompare(b));
+      for (const key of keys){
+        const r = rooms[key];
+        const occ = r.occupants?.length || 0;
+        if (occ >= r.meta.capacity) continue;
+        if (r.gender && r.gender !== gender) continue;
+        return key;
+      }
+      return null;
+    }
+
+    function allocateBooking(state, booking){
+      const type = booking.roomType;
+      const gender = booking.gender;
+
+      const roomKey = findRoomKey(state, type, gender);
+      if (!roomKey){
+        booking.status = "waitlist";
+        booking.allocatedRoomKey = "";
+        booking.allocatedRoom = "";
+        booking.floor = null;
+        booking.building = "";
+        booking.roommates = [];
+        return false;
+      }
+
+      const room = state.rooms[type][roomKey];
+      if (!room.gender) room.gender = gender;
+      room.occupants.push(booking.id);
+
+      booking.status = "allocated";
+      booking.allocatedRoomKey = roomKey;
+      booking.allocatedRoom = room.meta.roomNo;
+      booking.floor = room.meta.floor;
+      booking.building = room.meta.building;
+
+      const otherIds = room.occupants.filter(x => String(x) !== String(booking.id));
+      booking.roommates = otherIds
+        .map(id => getBookingById(state, id))
+        .filter(Boolean)
+        .map(b => b.fullName);
+
+      syncRoommatesInRoom(state, type, roomKey);
+      return true;
+    }
+
+    function releaseRoom(state, booking){
+      if (!booking.allocatedRoomKey) return;
+      const type = booking.roomType;
+      const roomKey = booking.allocatedRoomKey;
+      const room = state.rooms[type]?.[roomKey];
+      if (!room) return;
+
+      room.occupants = (room.occupants || []).filter(x => String(x) !== String(booking.id));
+      if ((room.occupants || []).length === 0) room.gender = null;
+
+      booking.allocatedRoomKey = "";
+      booking.allocatedRoom = "";
+      booking.floor = null;
+      booking.building = "";
+      booking.roommates = [];
+      booking.status = "waitlist";
+
+      syncRoommatesInRoom(state, type, roomKey);
+    }
+
+    /* ================= ADMIN PAIR ROOMMATES ================= */
+    function detachFromRoom(state, booking){
+      if (!booking.allocatedRoomKey) return;
+      const type = booking.roomType;
+      const roomKey = booking.allocatedRoomKey;
+      const room = state.rooms[type]?.[roomKey];
+      if (room){
+        room.occupants = (room.occupants || []).filter(x => String(x) !== String(booking.id));
+        if ((room.occupants || []).length === 0) room.gender = null;
+        syncRoommatesInRoom(state, type, roomKey);
+      }
+      booking.allocatedRoomKey = "";
+      booking.allocatedRoom = "";
+      booking.floor = null;
+      booking.building = "";
+      booking.roommates = [];
+      booking.status = "waitlist";
+    }
+
+    function pairRoommatesByEmail(primaryId, roommateEmail){
+      const state = readState();
+      const A = getBookingById(state, primaryId);
+      if (!A) return showToast("admin","Booking not found.","error");
+
+      const email = String(roommateEmail||"").trim().toLowerCase();
+      const B = state.bookings.find(b => String(b.email||"").trim().toLowerCase() === email);
+
+      if (!B) return showToast("admin","No booking found with that email.","error");
+      if (String(A.id) === String(B.id)) return showToast("admin","You can’t pair the same person.","error");
+
+      if (A.roomType === "1" || B.roomType === "1") return showToast("admin","Pairing is only for 2/3 in a room.","error");
+      if (A.roomType !== B.roomType) return showToast("admin","They must be the same room type (2 or 3).","error");
+      if (A.gender !== B.gender) return showToast("admin","They must be the same gender.","error");
+
+      const type = A.roomType;
+
+      // If A already allocated and has space, move B in
+      if (A.allocatedRoomKey){
+        const room = state.rooms[type][A.allocatedRoomKey];
+        if (room && (room.meta.capacity - (room.occupants?.length||0)) >= 1 && (!room.gender || room.gender === A.gender)){
+          detachFromRoom(state, B);
+          room.gender = A.gender;
+          room.occupants.push(B.id);
+
+          B.status = "allocated";
+          B.allocatedRoomKey = A.allocatedRoomKey;
+          B.allocatedRoom = room.meta.roomNo;
+          B.floor = room.meta.floor;
+          B.building = room.meta.building;
+
+          syncRoommatesInRoom(state, type, A.allocatedRoomKey);
+          saveState(state);
+          showToast("admin", `Paired ✅ Both now in ${allocationText(A)}`);
+
+          sendAcceptedEmail(B);
+          return;
+        }
+      }
+
+      // else find a room with >=2 free spaces
+      const keys = Object.keys(state.rooms[type]).sort((a,b)=>a.localeCompare(b));
+      let chosen = null;
+      for (const k of keys){
+        const room = state.rooms[type][k];
+        if (room.gender && room.gender !== A.gender) continue;
+        const free = room.meta.capacity - (room.occupants?.length||0);
+        if (free >= 2) { chosen = k; break; }
+      }
+      if (!chosen) return showToast("admin","No room has enough space to pair them now.","error");
+
+      detachFromRoom(state, A);
+      detachFromRoom(state, B);
+
+      const room = state.rooms[type][chosen];
+      room.gender = A.gender;
+      room.occupants.push(A.id, B.id);
+
+      for (const person of [A,B]){
+        person.status = "allocated";
+        person.allocatedRoomKey = chosen;
+        person.allocatedRoom = room.meta.roomNo;
+        person.floor = room.meta.floor;
+        person.building = room.meta.building;
+      }
+
+      syncRoommatesInRoom(state, type, chosen);
+      saveState(state);
+      showToast("admin", `Paired ✅ Both now in ${allocationText(A)}`);
+
+      sendAcceptedEmail(A);
+      sendAcceptedEmail(B);
+    }
+
+    /* ================= EMAIL PARAMETERS ================= */
+    function sendBookingReceivedEmail(b){
+      return sendEmail(EMAIL.tplBooking, {
+        to_name: b.fullName,
+        to_email: b.email,
+        hostel_name: "LIN MART EXECUTIVE HOSTEL",
+        phone: b.phone,
+        gender: genderLabel(b.gender),
+        room_type: roomLabel(b.roomType),
+        move_in: b.moveInDate,
+        school: b.school
+      });
+    }
+
+    function sendAcceptedEmail(b){
+      if (!b.email) return;
+      const mates = (b.roomType !== "1" && b.roommates && b.roommates.length) ? b.roommates.join(", ") : "None";
+      const alloc = allocationText(b);
+      return sendEmail(EMAIL.tplAllocated, {
+        to_name: b.fullName,
+        to_email: b.email,
+        hostel_name: "LIN MART EXECUTIVE HOSTEL",
+        phone: b.phone,
+        gender: genderLabel(b.gender),
+        room_type: roomLabel(b.roomType),
+        allocation: alloc,
+        roommates: mates,
+        move_in: b.moveInDate,
+        price: formatGHS(PRICES[String(b.roomType)] || 0),
+        bank_account_name: BANK.accountName,
+        bank_account_number: BANK.accountNumber,
+        bank_name: BANK.bank,
+        bank_branch: BANK.branch,
+        school: b.school
+      });
+    }
+
+    /* ================= BOOKING ================= */
+    function readSummary(){
+      const type = $("roomType").value;
+      const gender = $("gender").value;
+      const price = type ? PRICES[type] : null;
+
+      $("sumRoom").textContent = type ? roomLabel(type) : "—";
+      $("sumRoomPrice").textContent = price ? formatGHS(price) : "—";
+      $("sumGender").textContent = gender ? genderLabel(gender) : "—";
+
+      if (!type || !gender){
+        $("sumAvail").textContent = "—";
+      } else {
+        const spaces = availableSpacesGender(type, gender);
+        $("sumAvail").textContent = spaces > 0 ? `Available (${spaces} space${spaces===1?"":"s"})` : "No space (Waitlist)";
+      }
+    }
+
+    function validateBooking(){
+      const required = ["fullName","phone","email","school","roomType","moveIn","duration","gender"];
+      for (const id of required){
+        const el = $(id);
+        const val = el.value;
+        if (!val || (typeof val === "string" && val.trim() === "")){
+          el.focus();
+          showToast("booking", "Please complete all required fields.", "error");
+          return false;
+        }
+      }
+      if ($("moveIn").value < todayISO()){
+        $("moveIn").focus();
+        showToast("booking", "Move-in date cannot be in the past.", "error");
+        return false;
+      }
+      const email = $("email").value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        $("email").focus();
+        showToast("booking", "Please enter a valid email.", "error");
+        return false;
+      }
+      return true;
+    }
+
+    async function submitBooking(){
+      if (!validateBooking()) return;
+
+      const state = readState();
+      const booking = {
+        id: makeId(),
+        fullName: $("fullName").value.trim(),
+        phone: $("phone").value.trim(),
+        email: $("email").value.trim(),
+        school: $("school").value.trim(),
+        gender: $("gender").value,
+        roomType: $("roomType").value,
+        duration: Number($("duration").value || 1),
+        moveInDate: $("moveIn").value,
+        notes: $("notes").value.trim(),
+        status: "waitlist",
+        allocatedRoomKey: "",
+        allocatedRoom: "",
+        floor: null,
+        building: "",
+        roommates: [],
+        paidAt: "",
+        createdAt: new Date().toISOString()
+      };
+
+      state.bookings.unshift(booking);
+
+      // Allocate immediately for 1/2/3
+      const ok = allocateBooking(state, booking);
+      saveState(state);
+
+      // Email: booking received
+      sendBookingReceivedEmail(booking);
+
+      if (ok){
+        // Email: accepted/allocation
+        sendAcceptedEmail(booking);
+
+        const mates = (booking.roomType !== "1" && booking.roommates.length)
+          ? `Sharing with: ${booking.roommates.join(", ")}`
+          : (booking.roomType === "1" ? "Private room (no roommate)." : "No roommate assigned yet.");
+
+        showToast("booking",
+`Booking submitted ✅
+Allocated: ${allocationText(booking)}
+${mates}
+
+Emails sent to:
+${booking.email}
+
+Bank payment:
+${BANK.accountName}
+${BANK.accountNumber} (${BANK.bank}, ${BANK.branch})`,
+"success");
+      } else {
+        showToast("booking",
+`Booking submitted ✅
+No rooms available for your selection right now.
+You have been placed on the waitlist.
+
+Booking confirmation email sent to:
+${booking.email}`,
+"error");
+      }
+
+      $("bookingForm").reset();
+      readSummary();
+    }
+
+    function resetBooking(){
+      $("bookingForm").reset();
+      readSummary();
+      showToast("booking", "Form reset.");
+    }
+
+    /* ================= ADMIN ================= */
+    function setAdminAuthed(isAuthed){
+      $("adminLogin").classList.toggle("hide", isAuthed);
+      $("adminPanel").classList.toggle("hide", !isAuthed);
+    }
+    function loginAdmin(){
+      const u = $("adminUser").value.trim();
+      const p = $("adminPass").value;
+      if (u === ADMIN_USER && p === ADMIN_PASS){
+        sessionStorage.setItem("linmart_admin_auth","1");
+        setAdminAuthed(true);
+        showToast("admin","Welcome, admin!");
+        renderAdmin();
+      } else showToast("admin","Wrong username or password.","error");
+    }
+    function logoutAdmin(){
+      sessionStorage.removeItem("linmart_admin_auth");
+      setAdminAuthed(false);
+      showToast("admin","Logged out.");
+    }
+
+    function statusPill(status){
+      const s = (status || "waitlist").toLowerCase();
+      const map = {
+        waitlist: { cls:"warn", label:"Waitlist" },
+        allocated: { cls:"info", label:"Allocated" },
+        paid: { cls:"good", label:"Paid (Confirmed)" },
+        rejected: { cls:"bad", label:"Rejected" }
+      };
+      const x = map[s] || { cls:"warn", label:s };
+      return `<span class="statusPill ${x.cls}">${x.label}</span>`;
+    }
+
+    function applyAdminFilters(list){
+      const q = $("search").value.trim().toLowerCase();
+      const room = $("filterRoom").value;
+      const gender = $("filterGender").value;
+      const status = $("filterStatus").value;
+
+      return list.filter(b => {
+        const blob = [
+          b.fullName,b.phone,b.email,b.school,b.notes,
+          b.roomType,b.gender,b.status,b.allocatedRoom,b.building,(b.floor||"")
+        ].join(" ").toLowerCase();
+
+        return (!q || blob.includes(q)) &&
+          (!room || String(b.roomType)===room) &&
+          (!gender || String(b.gender)===gender) &&
+          (!status || String(b.status)===status);
+      });
+    }
+
+    function updateKpis(list){
+      $("kTotal").textContent = list.length;
+      $("kAllocated").textContent = list.filter(b => b.status==="allocated").length;
+      $("kWaitlist").textContent = list.filter(b => b.status==="waitlist").length;
+      $("kPaid").textContent = list.filter(b => b.status==="paid").length;
+      $("kRejected").textContent = list.filter(b => b.status==="rejected").length;
+    }
+
+    function renderAdmin(){
+      const state = readState();
+      updateKpis(state.bookings);
+      refreshAvailabilityUI();
+
+      const items = applyAdminFilters(state.bookings);
+      const tbody = $("tbody");
+      tbody.innerHTML = "";
+
+      if (!items.length){
+        tbody.innerHTML = `<tr><td colspan="9" style="padding:16px; color:var(--muted);">No bookings found.</td></tr>`;
+        return;
+      }
+
+      for (const b of items){
+        const price = formatGHS(PRICES[String(b.roomType)] || 0);
+        const mates = (b.roommates && b.roommates.length) ? b.roommates.join(", ") : "—";
+        const alloc = allocationText(b);
+
+        const msg =
+`Hello ${b.fullName}, LIN MART EXECUTIVE HOSTEL here.
+
+Gender: ${genderLabel(b.gender)}
+Room Type: ${roomLabel(String(b.roomType))} (${price})
+Status: ${(b.status||"waitlist").toUpperCase()}
+Allocated: ${alloc}
+Roommate(s): ${mates}
+Move-in: ${b.moveInDate || "—"}
+
+Bank payment:
+${BANK.accountName}
+${BANK.accountNumber}
+${BANK.bank} — ${BANK.branch}`.trim();
+
+        const wlink = waLink(b.phone, msg);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="color:var(--muted);">${fmtDateTime(b.createdAt)}</td>
+          <td>
+            <div style="font-weight:900;">${escapeHtml(b.fullName || "—")}</div>
+            <div style="color:var(--muted);">${escapeHtml(b.phone || "")}</div>
+            <div style="color:var(--muted);">${escapeHtml(b.email || "")}</div>
+            <div style="color:var(--muted);">${escapeHtml(b.school || "")}</div>
+          </td>
+          <td>${genderLabel(b.gender)}</td>
+          <td>${roomLabel(String(b.roomType||""))}<div style="color:var(--muted); margin-top:4px;">${price}</div></td>
+          <td><span class="mono">${escapeHtml(alloc)}</span></td>
+          <td>${escapeHtml(mates)}</td>
+          <td>${escapeHtml(b.moveInDate || "—")}</td>
+          <td>${statusPill(b.status || "waitlist")}</td>
+          <td>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn-ghost" data-act="allocate" data-id="${escapeHtml(b.id)}" type="button">Allocate</button>
+              <button class="btn-warn" data-act="pair" data-id="${escapeHtml(b.id)}" type="button">Pair roommate</button>
+              <button class="btn-primary" data-act="paid" data-id="${escapeHtml(b.id)}" type="button">Mark Paid</button>
+              <button class="btn-ghost" data-act="release" data-id="${escapeHtml(b.id)}" type="button">Release</button>
+              <button class="btn-warn" data-act="reject" data-id="${escapeHtml(b.id)}" type="button">Reject</button>
+              <button class="btn-primary" data-act="email" data-id="${escapeHtml(b.id)}" type="button">Resend email</button>
+              <button class="btn-primary" data-act="wa" data-id="${escapeHtml(b.id)}" type="button" ${wlink ? "" : "disabled"}>WhatsApp</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function adminAllocate(id){
+      const state = readState();
+      const b = getBookingById(state, id);
+      if (!b) return;
+
+      if (b.status === "rejected") return showToast("admin","This booking is rejected.","error");
+      if (b.allocatedRoomKey) return showToast("admin","Already allocated.","error");
+
+      const ok = allocateBooking(state, b);
+      saveState(state);
+
+      if (ok){
+        showToast("admin", `Allocated ✅ ${allocationText(b)}`);
+        sendAcceptedEmail(b);
+      } else {
+        showToast("admin", "No room available for this booking right now.", "error");
+      }
+    }
+
+    function adminMarkPaid(id){
+      const state = readState();
+      const b = getBookingById(state, id);
+      if (!b) return;
+      if (!b.allocatedRoomKey) return showToast("admin","Allocate a room first.","error");
+      b.status = "paid";
+      b.paidAt = new Date().toISOString();
+      saveState(state);
+      showToast("admin","Payment confirmed ✅");
+    }
+
+    function adminRelease(id){
+      const state = readState();
+      const b = getBookingById(state, id);
+      if (!b) return;
+      releaseRoom(state, b);
+      saveState(state);
+      showToast("admin","Room released (moved to waitlist).");
+    }
+
+    function adminReject(id){
+      const state = readState();
+      const b = getBookingById(state, id);
+      if (!b) return;
+      if (b.allocatedRoomKey) releaseRoom(state, b);
+      b.status = "rejected";
+      saveState(state);
+      showToast("admin","Booking rejected.");
+    }
+
+    function adminResendEmail(id){
+      const state = readState();
+      const b = getBookingById(state, id);
+      if (!b) return;
+      sendBookingReceivedEmail(b);
+      if (b.allocatedRoomKey) sendAcceptedEmail(b);
+      showToast("admin","Email sent ✅ (check EmailJS logs if not received).");
+    }
+
+    function clearAll(){
+      const ok = confirm("Delete ALL bookings and reset rooms? This cannot be undone.");
+      if (!ok) return;
+      localStorage.removeItem(STORAGE_KEY);
+      showToast("admin","All cleared.");
+      refreshAvailabilityUI();
+      renderAdmin();
+    }
+
+    function seedSamples(){
+      const state = readState();
+      const samples = [
+        { fullName:"Ama Mensah", phone:"0240000000", email:"ama@example.com", school:"University", gender:"female", roomType:"2" },
+        { fullName:"Esi Agyemang", phone:"0200000000", email:"esi@example.com", school:"University", gender:"female", roomType:"2" },
+        { fullName:"Kojo Boateng", phone:"0550000000", email:"kojo@example.com", school:"Polytechnic", gender:"male", roomType:"3" },
+        { fullName:"Yaw Owusu", phone:"0500000000", email:"yaw@example.com", school:"Polytechnic", gender:"male", roomType:"1" }
+      ];
+
+      for (const s of samples){
+        const b = {
+          id: makeId(),
+          fullName: s.fullName,
+          phone: s.phone,
+          email: s.email,
+          school: s.school,
+          gender: s.gender,
+          roomType: s.roomType,
+          duration: 1,
+          moveInDate: new Date(Date.now()+86400000*7).toISOString().slice(0,10),
+          notes: "",
+          status: "waitlist",
+          allocatedRoomKey: "",
+          allocatedRoom: "",
+          floor: null,
+          building: "",
+          roommates: [],
+          paidAt: "",
+          createdAt: new Date().toISOString()
+        };
+        state.bookings.unshift(b);
+        allocateBooking(state, b);
+      }
+      saveState(state);
+      showToast("admin","Sample bookings loaded.");
+      renderAdmin();
+    }
+
+    /* ================= VIEW SWITCH ================= */
+    function setView(which){
+      const isBooking = which === "booking";
+      $("viewBooking").classList.toggle("hide", !isBooking);
+      $("viewAdmin").classList.toggle("hide", isBooking);
+
+      $("tabBooking").classList.toggle("active", isBooking);
+      $("tabAdmin").classList.toggle("active", !isBooking);
+
+      $("tabBooking").setAttribute("aria-selected", isBooking ? "true" : "false");
+      $("tabAdmin").setAttribute("aria-selected", !isBooking ? "true" : "false");
+
+      if (!isBooking){
+        const authed = sessionStorage.getItem("linmart_admin_auth") === "1";
+        setAdminAuthed(authed);
+        if (authed) renderAdmin();
+      }
+    }
+
+    /* ================= EVENTS ================= */
+    $("tabBooking").addEventListener("click", ()=>setView("booking"));
+    $("tabAdmin").addEventListener("click", ()=>setView("admin"));
+
+    ["roomType","duration","gender"].forEach(id => $(id).addEventListener("change", readSummary));
+    $("submitBtn").addEventListener("click", submitBooking);
+    $("resetBtn").addEventListener("click", resetBooking);
+
+    $("loginBtn").addEventListener("click", loginAdmin);
+    $("logoutBtn").addEventListener("click", logoutAdmin);
+    $("seedBtn").addEventListener("click", seedSamples);
+
+    ["search","filterRoom","filterGender","filterStatus"].forEach(id => {
+      $(id).addEventListener("input", renderAdmin);
+      $(id).addEventListener("change", renderAdmin);
+    });
+
+    $("clearBtn").addEventListener("click", clearAll);
+
+    document.addEventListener("click", (e)=>{
+      const btn = e.target.closest("button[data-act]");
+      if (!btn) return;
+      const act = btn.dataset.act;
+      const id = btn.dataset.id;
+
+      if (act === "allocate") return adminAllocate(id);
+      if (act === "paid") return adminMarkPaid(id);
+      if (act === "release") return adminRelease(id);
+      if (act === "reject") return adminReject(id);
+      if (act === "email") return adminResendEmail(id);
+
+      if (act === "pair"){
+        const roommateEmail = prompt("Enter roommate email (must already have a booking):");
+        if (!roommateEmail) return;
+        return pairRoommatesByEmail(id, roommateEmail);
+      }
+
+      if (act === "wa"){
+        const state = readState();
+        const b = getBookingById(state, id);
+        if (!b) return;
+
+        const price = formatGHS(PRICES[String(b.roomType)] || 0);
+        const mates = (b.roommates && b.roommates.length) ? b.roommates.join(", ") : "—";
+
+        const msg =
+`Hello ${b.fullName}, LIN MART EXECUTIVE HOSTEL here.
+
+Gender: ${genderLabel(b.gender)}
+Room Type: ${roomLabel(String(b.roomType))} (${price})
+Status: ${(b.status||"waitlist").toUpperCase()}
+Allocated: ${allocationText(b)}
+Roommate(s): ${mates}
+Move-in: ${b.moveInDate || "—"}
+
+Bank payment:
+${BANK.accountName}
+${BANK.accountNumber}
+${BANK.bank} — ${BANK.branch}`.trim();
+
+        const link = waLink(b.phone, msg);
+        if (!link) return showToast("admin","Phone number invalid for WhatsApp.","error");
+        window.open(link, "_blank", "noopener,noreferrer");
+      }
+    });
+
+    /* ================= INIT ================= */
+    (function init(){
+      $("year").textContent = new Date().getFullYear();
+      $("moveIn").min = todayISO();
+      refreshAvailabilityUI();
+      readSummary();
+
+      const authed = sessionStorage.getItem("linmart_admin_auth") === "1";
+      setAdminAuthed(authed);
+    })();
+  </script>
+</body>
+</html>
