@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LIN MART EXECUTIVE HOSTEL — Booking & Admin</title>
+  <meta name="description" content="LIN MART EXECUTIVE HOSTEL booking + admin with bank deposit/transfer booking fee (GHS 200) and WhatsApp contact." />
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --text:#eaf1ff;
+      --muted:#9fb0d0;
+      --line:rgba(255,255,255,.10);
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+      --radius2:14px;
+      --accent:#7c5cff;
+      --accent2:#22c55e;
+      --danger:#ef4444;
+      --warn:#f59e0b;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      background: radial-gradient(1200px 600px at 15% 10%, rgba(124,92,255,.18), transparent 45%),
+                  radial-gradient(900px 500px at 90% 0%, rgba(34,197,94,.14), transparent 40%),
+                  var(--bg);
+      line-height:1.5;
+    }
+    .wrap{ max-width:1100px; margin:0 auto; padding:26px 16px 60px; }
+    header{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding:8px 0 18px;
+    }
+    .brand h1{ margin:0; font-size:20px; letter-spacing:.3px; }
+    .brand p{ margin:6px 0 0; color:var(--muted); font-size:13px; }
+
+    .topnav{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+      align-items:center;
+    }
+    .seg{
+      display:flex; gap:6px; padding:6px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:999px;
+      box-shadow:var(--shadow);
+    }
+    .tabbtn{
+      cursor:pointer; border:none;
+      padding:10px 12px;
+      border-radius:999px;
+      background:transparent;
+      color:var(--muted);
+      font-weight:800;
+      letter-spacing:.2px;
+      font-size:13px;
+    }
+    .tabbtn.active{
+      background:linear-gradient(90deg, var(--accent), #4cc3ff);
+      color:#081018;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      padding:10px 12px;
+      border-radius:999px;
+      box-shadow:var(--shadow);
+      font-size:13px;
+      color:var(--muted);
+    }
+    .dot{
+      width:9px; height:9px; border-radius:50%;
+      background:var(--accent2);
+      box-shadow:0 0 0 6px rgba(34,197,94,.12);
+      flex:0 0 auto;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:18px;
+      align-items:start;
+    }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .head{ padding:18px 18px 0; }
+    .card .head h2{ margin:0; font-size:16px; letter-spacing:.3px; }
+    .card .head p{ margin:8px 0 0; color:var(--muted); font-size:13px; }
+
+    .rooms{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+      padding:18px;
+    }
+    @media (max-width: 700px){ .rooms{ grid-template-columns:1fr; } }
+    .room{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.12);
+      border-radius:var(--radius2);
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:140px;
+    }
+    .price{ font-size:22px; font-weight:800; letter-spacing:.2px; }
+    .sub{ color:var(--muted); font-size:12px; margin-top:-6px; }
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      width:max-content;
+    }
+
+    .form{ padding:18px; display:grid; gap:14px; }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width: 640px){ .row{ grid-template-columns:1fr; } }
+    label{ display:block; font-size:12px; color:var(--muted); margin:0 0 6px; }
+    input, select, textarea{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.20);
+      color:var(--text);
+      outline:none;
+      transition:border .15s ease, box-shadow .15s ease;
+    }
+    textarea{ min-height:92px; resize:vertical; }
+    input:focus, select:focus, textarea:focus{
+      border-color:rgba(124,92,255,.6);
+      box-shadow:0 0 0 4px rgba(124,92,255,.15);
+    }
+
+    .summary{
+      padding:18px;
+      border-top:1px solid var(--line);
+      display:grid;
+      gap:10px;
+    }
+    .kv{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border:1px dashed rgba(255,255,255,.14);
+      border-radius:14px;
+      background:rgba(0,0,0,.10);
+      color:var(--muted);
+      font-size:13px;
+    }
+    .kv strong{ color:var(--text); font-weight:800; }
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+
+    button{
+      cursor:pointer; border:none;
+      padding:12px 14px;
+      border-radius:14px;
+      font-weight:800;
+      letter-spacing:.2px;
+      display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    }
+    .btn-primary{ background:linear-gradient(90deg, var(--accent), #4cc3ff); color:#081018; }
+    .btn-ghost{ background:rgba(255,255,255,.06); color:var(--text); border:1px solid var(--line); }
+    .btn-danger{ background:rgba(239,68,68,.16); color:#ffe0e0; border:1px solid rgba(239,68,68,.30); }
+    .btn-warn{ background:rgba(245,158,11,.14); color:#fff1d6; border:1px solid rgba(245,158,11,.30); }
+    .btn-primary:disabled, button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .note{ color:var(--muted); font-size:12px; padding:0 18px 18px; }
+
+    .toast{
+      display:none;
+      margin:0 18px 18px;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(34,197,94,.12);
+      color:#d7ffe6;
+      font-size:13px;
+    }
+    .toast.error{ background:rgba(239,68,68,.12); color:#ffe0e0; }
+
+    /* Admin */
+    .adminWrap{ padding:18px; }
+    .adminToolbar{
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+      padding:14px; border-bottom:1px solid var(--line);
+    }
+    .adminToolbar input, .adminToolbar select{
+      border-radius:12px; border:1px solid var(--line);
+      background:rgba(0,0,0,.20); color:var(--text);
+      padding:10px 12px; outline:none;
+    }
+    .adminToolbar input{ flex:1; min-width:220px; }
+
+    .kpis{
+      padding:14px;
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .pill2{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:999px;
+      padding:6px 10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .pill2.good{ border-color:rgba(34,197,94,.30); background:rgba(34,197,94,.10); color:#d7ffe6; }
+    .pill2.warn{ border-color:rgba(245,158,11,.35); background:rgba(245,158,11,.10); color:#fff1d6; }
+    .pill2.bad{ border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.10); color:#ffe0e0; }
+
+    table{ width:100%; border-collapse:collapse; }
+    th, td{
+      padding:12px 12px; border-bottom:1px solid var(--line);
+      vertical-align:top; font-size:13px;
+    }
+    th{ text-align:left; color:var(--muted); font-weight:800; font-size:12px; letter-spacing:.25px; }
+    tr:hover td{ background:rgba(255,255,255,.03); }
+    .muted{ color:var(--muted); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .statusPill{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .statusPill.good{ border-color:rgba(34,197,94,.30); background:rgba(34,197,94,.10); color:#d7ffe6; }
+    .statusPill.warn{ border-color:rgba(245,158,11,.35); background:rgba(245,158,11,.10); color:#fff1d6; }
+    .statusPill.bad{ border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.10); color:#ffe0e0; }
+
+    footer{ margin-top:18px; color:var(--muted); font-size:12px; text-align:center; opacity:.9; }
+    .hide{ display:none !important; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>LIN MART EXECUTIVE HOSTEL</h1>
+        <p>Student booking + admin management (Bank deposit / transfer booking fee: GHS 200)</p>
+      </div>
+
+      <div class="topnav">
+        <div class="seg" role="tablist" aria-label="Switch view">
+          <button class="tabbtn active" id="tabBooking" type="button" role="tab" aria-selected="true">Booking</button>
+          <button class="tabbtn" id="tabAdmin" type="button" role="tab" aria-selected="false">Admin</button>
+        </div>
+        <div class="pill" title="Availability status">
+          <span class="dot" aria-hidden="true"></span>
+          <span>Bookings open</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===================== BOOKING VIEW ===================== -->
+    <section id="viewBooking">
+      <div class="grid">
+        <section class="card" aria-label="Room types and prices">
+          <div class="head">
+            <h2>Room Types</h2>
+            <p>Booking fee is <strong>GHS 200</strong> (paid by bank deposit/transfer). Room price is paid later after confirmation.</p>
+          </div>
+
+          <div class="rooms">
+            <div class="room">
+              <div class="tag">1 in a room</div>
+              <div class="price">GHS 14,000</div>
+              <div class="sub">Private room (1 student)</div>
+            </div>
+
+            <div class="room">
+              <div class="tag">2 in a room</div>
+              <div class="price">GHS 7,000</div>
+              <div class="sub">Shared room (2 students)</div>
+            </div>
+
+            <div class="room">
+              <div class="tag">3 in a room</div>
+              <div class="price">GHS 5,500</div>
+              <div class="sub">Shared room (3 students)</div>
+            </div>
+          </div>
+
+          <div class="note">
+            <strong>Bank Payment:</strong> Pay booking fee to our bank account then enter the <strong>deposit slip number / reference</strong> to submit.
+            <br><br>
+            <strong>Bank:</strong> YOUR BANK NAME<br>
+            <strong>Account Name:</strong> LIN MART EXECUTIVE HOSTEL<br>
+            <strong>Account Number:</strong> 0000000000
+          </div>
+        </section>
+
+        <aside class="card" aria-label="Booking form">
+          <div class="head">
+            <h2>Book Now</h2>
+            <p>Fill the form, then enter your <strong>deposit slip / transaction reference</strong> to submit.</p>
+          </div>
+
+          <div id="toastBooking" class="toast" role="status" aria-live="polite"></div>
+
+          <form id="bookingForm" class="form" autocomplete="on" novalidate>
+            <div class="row">
+              <div>
+                <label for="fullName">Full name</label>
+                <input id="fullName" name="fullName" type="text" placeholder="e.g., Edric Atebi" required minlength="2" />
+              </div>
+              <div>
+                <label for="phone">Phone number</label>
+                <input id="phone" name="phone" type="tel" placeholder="e.g., 024 000 0000" required />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="email">Email (optional)</label>
+                <input id="email" name="email" type="email" placeholder="e.g., you@example.com" />
+              </div>
+              <div>
+                <label for="school">School / Institution</label>
+                <input id="school" name="school" type="text" placeholder="e.g., University of ..." required />
+              </div>
+            </div>
+
+            <div>
+              <label for="roomType">Room type</label>
+              <select id="roomType" name="roomType" required>
+                <option value="" selected disabled>Select a room type</option>
+                <option value="1">1 in a room — GHS 14,000</option>
+                <option value="2">2 in a room — GHS 7,000</option>
+                <option value="3">3 in a room — GHS 5,500</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="moveIn">Preferred move-in date</label>
+                <input id="moveIn" name="moveIn" type="date" required />
+              </div>
+              <div>
+                <label for="duration">Duration</label>
+                <select id="duration" name="duration" required>
+                  <option value="1" selected>1 semester / term</option>
+                  <option value="2">2 semesters / full year</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label for="notes">Notes (optional)</label>
+              <textarea id="notes" name="notes" placeholder="Any special request?"></textarea>
+            </div>
+
+            <!-- Option B: deposit reference -->
+            <div class="row">
+              <div>
+                <label for="payMethod">Payment method</label>
+                <select id="payMethod" name="payMethod" required>
+                  <option value="bank_deposit" selected>Bank deposit / Transfer</option>
+                </select>
+              </div>
+              <div>
+                <label for="depositRef">Deposit slip no. / Transaction reference</label>
+                <input id="depositRef" name="depositRef" type="text" placeholder="e.g., SLIP-20391 / TRX12345" required />
+              </div>
+            </div>
+          </form>
+
+          <div class="summary" aria-label="Booking summary">
+            <div class="kv"><span>Selected room</span><strong id="sumRoom">—</strong></div>
+            <div class="kv"><span>Room price (later)</span><strong id="sumRoomPrice">—</strong></div>
+            <div class="kv"><span>Duration</span><strong id="sumDuration">—</strong></div>
+            <div class="kv"><span>Booking fee (bank)</span><strong id="sumFee">—</strong></div>
+
+            <div class="actions">
+              <button id="submitBtn" class="btn-primary" type="button">Submit Booking (Bank Deposit)</button>
+              <button id="resetBtn" class="btn-ghost" type="button">Reset</button>
+            </div>
+
+            <div class="note" style="padding:0;">
+              After submitting, your booking will appear in Admin for review.
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===================== ADMIN VIEW ===================== -->
+    <section id="viewAdmin" class="hide">
+      <div class="card" aria-label="Admin panel">
+        <div class="head">
+          <h2>Admin</h2>
+          <p>Manage bookings saved on the server (PHP JSON storage).</p>
+        </div>
+
+        <div id="toastAdmin" class="toast" role="status" aria-live="polite"></div>
+
+        <!-- Login -->
+        <div id="adminLogin" class="adminWrap">
+          <div class="row">
+            <div>
+              <label for="adminUser">Username</label>
+              <input id="adminUser" type="text" value="admin" autocomplete="username" />
+            </div>
+            <div>
+              <label for="adminPass">Password</label>
+              <input id="adminPass" type="password" placeholder="Enter password" autocomplete="current-password" />
+            </div>
+          </div>
+
+          <div class="actions" style="margin-top:12px;">
+            <button id="loginBtn" class="btn-primary" type="button">Sign in</button>
+          </div>
+
+          <div class="note" style="padding:12px 0 0;">
+            Demo password is <span class="mono">admin123</span>. Change it in the code before you publish.
+            <br/>Security note: This is a simple demo login. For production, use real backend auth.
+          </div>
+        </div>
+
+        <!-- Panel -->
+        <div id="adminPanel" class="hide">
+          <div class="adminToolbar">
+            <input id="search" type="search" placeholder="Search name, phone, school, notes, ref..." />
+            <select id="filterRoom">
+              <option value="">All room types</option>
+              <option value="1">1 in a room</option>
+              <option value="2">2 in a room</option>
+              <option value="3">3 in a room</option>
+            </select>
+            <select id="filterStatus">
+              <option value="">All status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <select id="filterPaid">
+              <option value="">All payments</option>
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
+            </select>
+
+            <button class="btn-ghost" id="refreshBtn" type="button">Refresh</button>
+            <button class="btn-ghost" id="exportBtn" type="button">Export CSV</button>
+            <button class="btn-danger" id="logoutBtn" type="button">Logout</button>
+          </div>
+
+          <div class="kpis">
+            <span class="pill2">Total: <strong id="kTotal">0</strong></span>
+            <span class="pill2 warn">Pending: <strong id="kPending">0</strong></span>
+            <span class="pill2 good">Approved: <strong id="kApproved">0</strong></span>
+            <span class="pill2 bad">Rejected: <strong id="kRejected">0</strong></span>
+            <span class="pill2 good">Paid: <strong id="kPaid">0</strong></span>
+          </div>
+
+          <div style="overflow:auto;">
+            <table aria-label="Bookings table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Student</th>
+                  <th>Room</th>
+                  <th>Move-in</th>
+                  <th>Duration</th>
+                  <th>Fee</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th>Deposit Ref</th>
+                  <th style="min-width:520px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="note">
+            Bookings are stored on server in <span class="mono">/api/data/bookings.json</span>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      © <span id="year"></span> LIN MART EXECUTIVE HOSTEL
+    </footer>
+  </div>
+
+  <script>
+    // ================= CONFIG =================
+    const PRICES = { "1": 14000, "2": 7000, "3": 5500 };
+    const BOOKING_FEE = 200;
+
+    // Demo login (front-end only)
+    const ADMIN_USER = "admin";
+    const ADMIN_PASS = "admin123"; // CHANGE THIS BEFORE PUBLISHING
+
+    const $ = (id) => document.getElementById(id);
+
+    function formatGHS(amount){
+      return "GHS " + Number(amount).toLocaleString("en-GH");
+    }
+
+    function todayISO(){
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function showToast(where, message, type="success"){
+      const toast = where === "admin" ? $("toastAdmin") : $("toastBooking");
+      toast.className = "toast" + (type === "error" ? " error" : "");
+      toast.textContent = message;
+      toast.style.display = "block";
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => { toast.style.display = "none"; }, 4200);
+    }
+
+    function makeId(){
+      return "bk_" + Math.random().toString(36).slice(2) + "_" + Date.now();
+    }
+
+    function roomLabel(v){
+      if (v === "1") return "1 in a room";
+      if (v === "2") return "2 in a room";
+      if (v === "3") return "3 in a room";
+      return "—";
+    }
+
+    function durationLabel(v){
+      return Number(v) === 2 ? "2 semesters / full year" : "1 semester / term";
+    }
+
+    function fmtDateTime(iso){
+      if (!iso) return "—";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleString(undefined, { year:"numeric", month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+
+    function escapeHtml(str){
+      return String(str ?? "").replace(/[&<>"']/g, (m) => ({
+        "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+      })[m]);
+    }
+
+    // WhatsApp helper
+    function normalizeGHForWa(phoneRaw){
+      let p = String(phoneRaw || "").trim();
+      p = p.replace(/[^\d+]/g, "");
+      if (!p) return "";
+      if (p.startsWith("+")) p = p.slice(1);
+      if (/^0\d{9}$/.test(p)) return "233" + p.slice(1);
+      if (/^\d{9}$/.test(p)) return "233" + p;
+      if (/^233\d{9}$/.test(p)) return p;
+      return p.replace(/\D/g, "");
+    }
+    function waLink(phoneRaw, message){
+      const wa = normalizeGHForWa(phoneRaw);
+      if (!wa) return "";
+      const text = encodeURIComponent(message || "");
+      return `https://wa.me/${wa}?text=${text}`;
+    }
+
+    // ================= VIEW SWITCH =================
+    function setView(which){
+      const isBooking = which === "booking";
+      $("viewBooking").classList.toggle("hide", !isBooking);
+      $("viewAdmin").classList.toggle("hide", isBooking);
+
+      $("tabBooking").classList.toggle("active", isBooking);
+      $("tabAdmin").classList.toggle("active", !isBooking);
+
+      $("tabBooking").setAttribute("aria-selected", isBooking ? "true" : "false");
+      $("tabAdmin").setAttribute("aria-selected", !isBooking ? "true" : "false");
+
+      if (!isBooking) {
+        const authed = sessionStorage.getItem("linmart_admin_auth") === "1";
+        setAdminAuthed(authed);
+        if (authed) renderAdmin();
+      }
+    }
+
+    // ================= BOOKING =================
+    function readSummary(){
+      const roomType = $("roomType").value;
+      const duration = $("duration").value;
+      const roomPrice = roomType ? PRICES[roomType] : null;
+
+      $("sumRoom").textContent = roomType ? roomLabel(roomType) : "—";
+      $("sumRoomPrice").textContent = roomPrice ? formatGHS(roomPrice) : "—";
+      $("sumDuration").textContent = duration ? durationLabel(duration) : "—";
+      $("sumFee").textContent = formatGHS(BOOKING_FEE);
+    }
+
+    function validateBooking(){
+      const required = ["fullName","phone","school","roomType","moveIn","duration","depositRef"];
+      for (const id of required){
+        const el = $(id);
+        const val = el.value;
+        if (!val || (typeof val === "string" && val.trim() === "")){
+          el.focus();
+          showToast("booking", "Please complete all required fields.", "error");
+          return false;
+        }
+      }
+
+      if ($("moveIn").value < todayISO()){
+        $("moveIn").focus();
+        showToast("booking", "Move-in date cannot be in the past.", "error");
+        return false;
+      }
+
+      const phone = $("phone").value.trim();
+      if (!/^[0-9+\-() ]{7,20}$/.test(phone)){
+        $("phone").focus();
+        showToast("booking", "Please enter a valid phone number.", "error");
+        return false;
+      }
+
+      const email = $("email").value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        $("email").focus();
+        showToast("booking", "Please enter a valid email address or leave it blank.", "error");
+        return false;
+      }
+
+      return true;
+    }
+
+    async function submitBookingBankDeposit(){
+      if (!validateBooking()) return;
+
+      const booking = {
+        id: makeId(),
+        hostelName: "LIN MART EXECUTIVE HOSTEL",
+        fullName: $("fullName").value.trim(),
+        phone: $("phone").value.trim(),
+        email: $("email").value.trim(),
+        school: $("school").value.trim(),
+        roomType: $("roomType").value,
+        duration: Number($("duration").value || 1),
+        moveInDate: $("moveIn").value,
+        notes: $("notes").value.trim(),
+        status: "pending",
+        paymentStatus: "unpaid",
+        paymentMethod: "bank_deposit",
+        bookingFee: BOOKING_FEE,
+        depositRef: $("depositRef").value.trim(),
+        createdAt: new Date().toISOString(),
+      };
+
+      $("submitBtn").disabled = true;
+
+      try{
+        const res = await fetch("/api/submit-booking.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(booking)
+        });
+
+        const out = await res.json();
+        if (!res.ok) throw new Error(out?.message || "Submit failed");
+
+        showToast("booking", "Booking submitted ✅ We’ll confirm after checking your deposit.");
+        $("bookingForm").reset();
+        readSummary();
+
+      }catch(e){
+        showToast("booking", e.message, "error");
+      }finally{
+        $("submitBtn").disabled = false;
+      }
+    }
+
+    function resetBooking(){
+      $("bookingForm").reset();
+      readSummary();
+      showToast("booking", "Form reset.");
+    }
+
+    // ================= ADMIN (SERVER-BASED) =================
+    function setAdminAuthed(isAuthed){
+      $("adminLogin").classList.toggle("hide", isAuthed);
+      $("adminPanel").classList.toggle("hide", !isAuthed);
+    }
+
+    function loginAdmin(){
+      const u = $("adminUser").value.trim();
+      const p = $("adminPass").value;
+      if (u === ADMIN_USER && p === ADMIN_PASS){
+        sessionStorage.setItem("linmart_admin_auth", "1");
+        setAdminAuthed(true);
+        showToast("admin", "Welcome, admin!");
+        renderAdmin();
+        return;
+      }
+      showToast("admin", "Wrong username or password.", "error");
+    }
+
+    function logoutAdmin(){
+      sessionStorage.removeItem("linmart_admin_auth");
+      setAdminAuthed(false);
+      showToast("admin", "Logged out.");
+    }
+
+    function statusPill(status){
+      const s = (status || "pending").toLowerCase();
+      const cls = s === "approved" ? "good" : (s === "rejected" ? "bad" : "warn");
+      const label = s.charAt(0).toUpperCase() + s.slice(1);
+      return `<span class="statusPill ${cls}">${label}</span>`;
+    }
+
+    function payPill(paymentStatus){
+      const s = (paymentStatus || "unpaid").toLowerCase();
+      const cls = s === "paid" ? "good" : "warn";
+      const label = s === "paid" ? "Paid" : "Unpaid";
+      return `<span class="statusPill ${cls}">${label}</span>`;
+    }
+
+    function applyAdminFilters(list){
+      const q = $("search").value.trim().toLowerCase();
+      const room = $("filterRoom").value;
+      const status = $("filterStatus").value;
+      const paid = $("filterPaid").value;
+
+      return list.filter(b => {
+        const blob = [
+          b.fullName, b.phone, b.email, b.school, b.notes,
+          b.roomType, b.moveInDate, b.createdAt, b.status, b.paymentStatus,
+          b.depositRef
+        ].join(" ").toLowerCase();
+
+        const okQ = !q || blob.includes(q);
+        const okRoom = !room || String(b.roomType) === room;
+        const okStatus = !status || String(b.status || "pending") === status;
+        const okPaid = !paid || String(b.paymentStatus || "unpaid") === paid;
+        return okQ && okRoom && okStatus && okPaid;
+      });
+    }
+
+    function updateKpis(list){
+      const total = list.length;
+      const pending = list.filter(b => (b.status || "pending") === "pending").length;
+      const approved = list.filter(b => b.status === "approved").length;
+      const rejected = list.filter(b => b.status === "rejected").length;
+      const paid = list.filter(b => (b.paymentStatus || "unpaid") === "paid").length;
+
+      $("kTotal").textContent = total;
+      $("kPending").textContent = pending;
+      $("kApproved").textContent = approved;
+      $("kRejected").textContent = rejected;
+      $("kPaid").textContent = paid;
+    }
+
+    async function fetchBookings(){
+      const res = await fetch("/api/bookings.php", { cache: "no-store" });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out?.message || "Could not load bookings");
+      return out.bookings || [];
+    }
+
+    async function renderAdmin(){
+      let all = [];
+      try{
+        all = await fetchBookings();
+      }catch(e){
+        showToast("admin", e.message, "error");
+        return;
+      }
+
+      updateKpis(all);
+
+      const items = applyAdminFilters(all);
+      const tbody = $("tbody");
+      tbody.innerHTML = "";
+
+      if (items.length === 0){
+        tbody.innerHTML = `<tr><td colspan="10" class="muted" style="padding:16px;">No bookings found.</td></tr>`;
+        return;
+      }
+
+      for (const b of items){
+        const msg =
+`Hello ${b.fullName || ""}, this is LIN MART EXECUTIVE HOSTEL.
+Your booking request (${roomLabel(String(b.roomType))}) is: ${(b.status || "pending").toUpperCase()}.
+Booking fee: ${(b.paymentStatus || "unpaid").toUpperCase()} (GHS ${b.bookingFee || BOOKING_FEE}).
+Deposit Ref: ${b.depositRef || "—"}.
+Move-in: ${b.moveInDate || "—"}.
+Reply to confirm.`.trim();
+
+        const link = waLink(b.phone, msg);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="muted">${fmtDateTime(b.createdAt)}</td>
+          <td>
+            <div style="font-weight:800;">${escapeHtml(b.fullName || "—")}</div>
+            <div class="muted">${escapeHtml(b.phone || "")}${b.email ? " • " + escapeHtml(b.email) : ""}</div>
+            <div class="muted">${escapeHtml(b.school || "")}</div>
+            ${b.notes ? `<div class="muted" style="margin-top:6px;">Notes: ${escapeHtml(b.notes)}</div>` : ""}
+          </td>
+          <td>${roomLabel(String(b.roomType || ""))}</td>
+          <td>${escapeHtml(b.moveInDate || "—")}</td>
+          <td>${durationLabel(b.duration || 1)}</td>
+          <td>${formatGHS(b.bookingFee || BOOKING_FEE)}</td>
+          <td>${payPill(b.paymentStatus || "unpaid")}</td>
+          <td>${statusPill(b.status || "pending")}</td>
+          <td class="mono">${escapeHtml(b.depositRef || "—")}</td>
+          <td>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn-ghost" data-act="approve" data-id="${escapeHtml(b.id)}" type="button">Approve</button>
+              <button class="btn-warn" data-act="reject" data-id="${escapeHtml(b.id)}" type="button">Reject</button>
+              <button class="btn-ghost" data-act="paid" data-id="${escapeHtml(b.id)}" type="button">Mark Paid</button>
+              <button class="btn-danger" data-act="delete" data-id="${escapeHtml(b.id)}" type="button">Delete</button>
+              <button class="btn-primary" data-act="wa" data-id="${escapeHtml(b.id)}" type="button" ${link ? "" : "disabled"}>WhatsApp</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function updateBooking(id, patch){
+      const res = await fetch("/api/update-booking.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, patch })
+      });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out?.message || "Update failed");
+      return out;
+    }
+
+    async function deleteBookingServer(id){
+      const ok = confirm("Delete this booking?");
+      if (!ok) return;
+      const res = await fetch("/api/delete-booking.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out?.message || "Delete failed");
+      return out;
+    }
+
+    function exportCSVFromRows(){
+      const rows = Array.from(document.querySelectorAll("#tbody tr"));
+      if (rows.length === 0){
+        showToast("admin", "No bookings to export.", "error");
+        return;
+      }
+
+      // export whatever is currently in the table
+      const header = ["createdAt","id","fullName","phone","email","school","roomType","duration","moveInDate","bookingFee","paymentStatus","status","depositRef","notes"];
+      const lines = [header.join(",")];
+
+      // for CSV, fetch full bookings so it's accurate
+      fetchBookings().then(list => {
+        for (const b of list){
+          const row = header.map(k => `"${String(b[k] ?? "").replace(/"/g,'""')}"`);
+          lines.push(row.join(","));
+        }
+        const blob = new Blob([lines.join("\n")], { type:"text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "linmart_bookings.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast("admin", "Exported CSV.");
+      }).catch(e => showToast("admin", e.message, "error"));
+    }
+
+    // ================= EVENTS =================
+    $("tabBooking").addEventListener("click", () => setView("booking"));
+    $("tabAdmin").addEventListener("click", () => setView("admin"));
+
+    ["roomType","duration"].forEach(id => $(id).addEventListener("change", readSummary));
+    $("submitBtn").addEventListener("click", submitBookingBankDeposit);
+    $("resetBtn").addEventListener("click", resetBooking);
+
+    $("loginBtn").addEventListener("click", loginAdmin);
+    $("logoutBtn").addEventListener("click", logoutAdmin);
+
+    ["search","filterRoom","filterStatus","filterPaid"].forEach(id => {
+      $(id).addEventListener("input", renderAdmin);
+      $(id).addEventListener("change", renderAdmin);
+    });
+
+    $("refreshBtn").addEventListener("click", renderAdmin);
+    $("exportBtn").addEventListener("click", exportCSVFromRows);
+
+    document.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-act]");
+      if (!btn) return;
+
+      const act = btn.dataset.act;
+      const id = btn.dataset.id;
+
+      try{
+        if (act === "approve"){
+          await updateBooking(id, { status: "approved" });
+          showToast("admin", "Approved ✅");
+          return renderAdmin();
+        }
+        if (act === "reject"){
+          await updateBooking(id, { status: "rejected" });
+          showToast("admin", "Rejected ❌");
+          return renderAdmin();
+        }
+        if (act === "paid"){
+          await updateBooking(id, { paymentStatus: "paid" });
+          showToast("admin", "Marked Paid ✅");
+          return renderAdmin();
+        }
+        if (act === "delete"){
+          await deleteBookingServer(id);
+          showToast("admin", "Deleted.");
+          return renderAdmin();
+        }
+
+        if (act === "wa") {
+          const list = await fetchBookings();
+          const b = list.find(x => String(x.id) === String(id));
+          if (!b) return;
+
+          const msg =
+`Hello ${b.fullName || ""}, this is LIN MART EXECUTIVE HOSTEL.
+Your booking request (${roomLabel(String(b.roomType))}) is: ${(b.status || "pending").toUpperCase()}.
+Booking fee: ${(b.paymentStatus || "unpaid").toUpperCase()} (GHS ${b.bookingFee || BOOKING_FEE}).
+Deposit Ref: ${b.depositRef || "—"}.
+Move-in: ${b.moveInDate || "—"}.
+Reply to confirm.`.trim();
+
+          const link = waLink(b.phone, msg);
+          if (!link){
+            showToast("admin", "Phone number invalid for WhatsApp.", "error");
+            return;
+          }
+          window.open(link, "_blank", "noopener,noreferrer");
+        }
+      }catch(err){
+        showToast("admin", err.message, "error");
+      }
+    });
+
+    // ================= INIT =================
+    (function init(){
+      $("year").textContent = new Date().getFullYear();
+      $("moveIn").min = todayISO();
+      readSummary();
+
+      const authed = sessionStorage.getItem("linmart_admin_auth") === "1";
+      setAdminAuthed(authed);
+    })();
+  </script>
+</body>
+</html>
