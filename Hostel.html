@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LIN MART EXECUTIVE HOSTEL — Booking & Admin</title>
-  <meta name="description" content="LIN MART EXECUTIVE HOSTEL booking system with room allocation, gender-based sharing, admin pairing, WhatsApp, and EmailJS confirmations (no PHP)." />
+  <meta name="description" content="LIN MART EXECUTIVE HOSTEL booking system with Firebase sync + EmailJS emails (no PHP)." />
 
-  <!-- EmailJS (NO PHP / NO BACKEND) -->
+  <!-- EmailJS (no backend) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
   <style>
@@ -225,8 +225,8 @@
       <div class="brand">
         <h1>LIN MART EXECUTIVE HOSTEL</h1>
         <p>
-          Book a room and receive email confirmation. When allocated, you’ll get another email with room number, building/floor, roommates (if shared), and bank payment details.
-          <br><span class="mono">Static (no-PHP) version: bookings are saved in this browser.</span>
+          Book a room (any device). Admin sees bookings live (all devices). Emails sent via EmailJS.
+          <br><span class="mono">No PHP. Uses Firebase Firestore (cloud database).</span>
         </p>
       </div>
 
@@ -288,22 +288,22 @@
             <div class="row">
               <div>
                 <label for="fullName">Full name</label>
-                <input id="fullName" name="fullName" type="text" placeholder="e.g., Edric Atebi" required minlength="2" />
+                <input id="fullName" type="text" placeholder="e.g., Edric Atebi" required minlength="2" />
               </div>
               <div>
                 <label for="phone">Phone number</label>
-                <input id="phone" name="phone" type="tel" placeholder="e.g., 024 000 0000" required />
+                <input id="phone" type="tel" placeholder="e.g., 024 000 0000" required />
               </div>
             </div>
 
             <div class="row">
               <div>
                 <label for="email">Email (required)</label>
-                <input id="email" name="email" type="email" placeholder="e.g., you@example.com" required />
+                <input id="email" type="email" placeholder="e.g., you@example.com" required />
               </div>
               <div>
                 <label for="gender">Gender</label>
-                <select id="gender" name="gender" required>
+                <select id="gender" required>
                   <option value="" selected disabled>Select gender</option>
                   <option value="female">Female</option>
                   <option value="male">Male</option>
@@ -314,11 +314,11 @@
             <div class="row">
               <div>
                 <label for="school">School / Institution</label>
-                <input id="school" name="school" type="text" placeholder="e.g., University of ..." required />
+                <input id="school" type="text" placeholder="e.g., University of ..." required />
               </div>
               <div>
                 <label for="roomType">Room type</label>
-                <select id="roomType" name="roomType" required>
+                <select id="roomType" required>
                   <option value="" selected disabled>Select a room type</option>
                   <option value="1">1 in a room — GHS 14,000</option>
                   <option value="2">2 in a room — GHS 7,000</option>
@@ -330,11 +330,11 @@
             <div class="row">
               <div>
                 <label for="moveIn">Preferred move-in date</label>
-                <input id="moveIn" name="moveIn" type="date" required />
+                <input id="moveIn" type="date" required />
               </div>
               <div>
                 <label for="duration">Duration</label>
-                <select id="duration" name="duration" required>
+                <select id="duration" required>
                   <option value="1" selected>1 semester / term</option>
                   <option value="2">2 semesters / full year</option>
                 </select>
@@ -343,7 +343,7 @@
 
             <div>
               <label for="notes">Notes (optional)</label>
-              <textarea id="notes" name="notes" placeholder="Any special request?"></textarea>
+              <textarea id="notes" placeholder="Any special request?"></textarea>
             </div>
 
             <div class="actions">
@@ -360,9 +360,9 @@
           </div>
 
           <div class="note">
-            Emails are sent using your EmailJS templates:
-            <span class="mono">template_lkwqlmo</span> (booking received) and
-            <span class="mono">template_pp7xixk</span> (booking allocated).
+            Email templates:
+            <span class="mono">template_lkwqlmo</span> (booking received) •
+            <span class="mono">template_pp7xixk</span> (booking allocated)
           </div>
         </aside>
       </div>
@@ -373,7 +373,7 @@
       <div class="card">
         <div class="head">
           <h2>Admin Dashboard</h2>
-          <p>Allocate rooms, mark paid, release rooms, WhatsApp students, pair roommates, and resend emails.</p>
+          <p>Live bookings from all devices. Allocate rooms, pair roommates, mark paid, release, reject, resend email, WhatsApp.</p>
         </div>
 
         <div id="toastAdmin" class="toast" role="status" aria-live="polite"></div>
@@ -391,7 +391,6 @@
           </div>
           <div class="actions" style="margin-top:12px;">
             <button id="loginBtn" class="btn-primary" type="button">Sign in</button>
-            <button id="seedBtn" class="btn-ghost" type="button">Load sample bookings</button>
           </div>
           <div class="note" style="padding:12px 0 0;">
             Demo password is <span class="mono">admin123</span>. Change it before publishing.
@@ -420,7 +419,7 @@
               <option value="rejected">Rejected</option>
             </select>
 
-            <button class="btn-danger" id="clearBtn" type="button">Clear all</button>
+            <button class="btn-danger" id="clearBtn" type="button">Clear all bookings</button>
             <button class="btn-primary" id="logoutBtn" type="button">Logout</button>
           </div>
 
@@ -448,7 +447,7 @@
                   <th>Roommates</th>
                   <th>Move-in</th>
                   <th>Status</th>
-                  <th style="min-width:620px;">Actions</th>
+                  <th style="min-width:650px;">Actions</th>
                 </tr>
               </thead>
               <tbody id="tbody"></tbody>
@@ -456,7 +455,7 @@
           </div>
 
           <div class="note">
-            Static demo: data is saved in this browser only (localStorage).
+            If admin opens on another device, it still shows the same bookings (cloud).
           </div>
         </div>
       </div>
@@ -465,32 +464,62 @@
     <footer>© <span id="year"></span> LIN MART EXECUTIVE HOSTEL</footer>
   </div>
 
-  <script>
-    /* =========================================================
-      EMAILJS (YOUR REAL KEYS + TEMPLATE IDs)
-    ========================================================= */
+  <script type="module">
+    // ================== FIREBASE (CDN MODULES) ==================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDoc,
+      setDoc,
+      doc,
+      updateDoc,
+      deleteDoc,
+      getDocs,
+      query,
+      orderBy,
+      onSnapshot,
+      serverTimestamp,
+      runTransaction
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_41JZpf3N-31ygWwy-QB-GATaQ6aKY2g",
+      authDomain: "lin-mart-hostel.firebaseapp.com",
+      projectId: "lin-mart-hostel",
+      storageBucket: "lin-mart-hostel.firebasestorage.app",
+      messagingSenderId: "350829752888",
+      appId: "1:350829752888:web:174ac2acb9204986c22ccd",
+      measurementId: "G-3CGFQGP0KH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ================== EMAILJS (YOUR REAL IDs) ==================
     const EMAIL = {
       publicKey: "u7PnlhwIw05D-Rqh9",
       serviceId: "service_agply6t",
-      tplBooking: "template_lkwqlmo",   // Booking Received
-      tplAllocated: "template_pp7xixk"  // Booking Accepted / Allocated
+      tplBooking: "template_lkwqlmo",
+      tplAllocated: "template_pp7xixk"
     };
 
     if (window.emailjs && EMAIL.publicKey) {
-      emailjs.init(EMAIL.publicKey);
+      window.emailjs.init(EMAIL.publicKey);
     }
 
     async function sendEmail(templateId, params){
       try{
         if (!window.emailjs) return;
-        await emailjs.send(EMAIL.serviceId, templateId, params);
+        await window.emailjs.send(EMAIL.serviceId, templateId, params);
       } catch (e){
         console.error("Email failed:", e);
       }
     }
 
-    /* ================= CONFIG ================= */
-    const STORAGE_KEY = "linmart_booking_system_v1_static";
+    // ================== CONFIG ==================
+    const HOSTEL_NAME = "LIN MART EXECUTIVE HOSTEL";
 
     const PRICES = { "1": 14000, "2": 7000, "3": 5500 };
 
@@ -507,10 +536,7 @@
     const MAIN_BUILDING = "Main Building";
     const SINGLE_BUILDING = "Single Building";
 
-    // Your exact requirement:
-    // - 1-in-room: own building, 2 floors, 6 rooms each floor = 12 rooms
-    // - 2-in-room: 8 rooms each floor x3 floors = 24 rooms
-    // - 3-in-room: 3 rooms on each of floor 1 and 2 = 6 rooms
+    // Rooms: 1-in separate building (12 rooms), 2-in (24 rooms), 3-in (6 rooms)
     const ROOM_SETUP = {
       "1": {
         building: SINGLE_BUILDING,
@@ -536,32 +562,36 @@
       }
     };
 
-    /* ================= HELPERS ================= */
+    // Firestore locations
+    const BOOKINGS_COL = "bookings";
+    const META_COL = "meta";
+    const ROOMS_DOC = "roomsState";  // meta/roomsState
+
+    // ================== HELPERS ==================
     const $ = (id) => document.getElementById(id);
     const pad2 = (n) => String(n).padStart(2,"0");
-
-    function formatGHS(n){ return "GHS " + Number(n).toLocaleString("en-GH"); }
-    function roomLabel(v){ return v==="1"?"1 in a room":v==="2"?"2 in a room":v==="3"?"3 in a room":"—"; }
-    function genderLabel(g){ return g==="female"?"Female":g==="male"?"Male":"—"; }
-    function todayISO(){
+    const escapeHtml = (str) => String(str ?? "").replace(/[&<>"']/g, (m)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+    const formatGHS = (n)=> "GHS " + Number(n).toLocaleString("en-GH");
+    const roomLabel = (v)=> v==="1"?"1 in a room":v==="2"?"2 in a room":v==="3"?"3 in a room":"—";
+    const genderLabel = (g)=> g==="female"?"Female":g==="male"?"Male":"—";
+    const todayISO = ()=>{
       const d = new Date(); d.setHours(0,0,0,0);
       return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-    }
-    function escapeHtml(str){
-      return String(str ?? "").replace(/[&<>"']/g, (m)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
-    }
-    function fmtDateTime(iso){
-      const d = new Date(iso);
-      if (Number.isNaN(d.getTime())) return iso || "—";
-      return d.toLocaleString(undefined, { year:"numeric", month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit" });
-    }
+    };
+    const fmtDateTime = (d)=>{
+      try{
+        if (!d) return "—";
+        const dt = d.toDate ? d.toDate() : new Date(d);
+        return dt.toLocaleString(undefined, { year:"numeric", month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+      }catch{ return "—"; }
+    };
     function showToast(where, msg, type="success"){
       const t = where==="admin" ? $("toastAdmin") : $("toastBooking");
       t.className = "toast" + (type==="error" ? " error" : "");
       t.textContent = msg;
       t.style.display = "block";
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(()=>{ t.style.display="none"; }, 6500);
+      showToast._t = setTimeout(()=>{ t.style.display="none"; }, 7000);
     }
 
     function normalizeGHForWa(phoneRaw){
@@ -579,10 +609,9 @@
       return `https://wa.me/${wa}?text=${encodeURIComponent(message||"")}`;
     }
 
-    /* ================= STATE ================= */
+    // ================== ROOMS STATE (CLOUD) ==================
     function defaultRooms(){
       const rooms = { "1": {}, "2": {}, "3": {} };
-
       for (const type of ["1","2","3"]){
         const cfg = ROOM_SETUP[type];
         for (const floor of cfg.floors){
@@ -600,245 +629,29 @@
       return rooms;
     }
 
-    function readState(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        const parsed = raw ? JSON.parse(raw) : null;
-        if (parsed && typeof parsed === "object"){
-          if (!parsed.rooms) parsed.rooms = defaultRooms();
-          if (!parsed.bookings) parsed.bookings = [];
-          return parsed;
-        }
-      } catch {}
-      return { rooms: defaultRooms(), bookings: [] };
+    async function ensureRoomsDoc(){
+      const ref = doc(db, META_COL, ROOMS_DOC);
+      const snap = await getDoc(ref);
+      if (!snap.exists()){
+        await setDoc(ref, { rooms: defaultRooms(), updatedAt: serverTimestamp() });
+      }
     }
-    function saveState(state){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      refreshAvailabilityUI();
-      if ($("adminPanel") && !$("adminPanel").classList.contains("hide")) renderAdmin();
-    }
-    function makeId(){ return "bk_" + Math.random().toString(36).slice(2) + "_" + Date.now(); }
-    function getBookingById(state, id){ return state.bookings.find(b => String(b.id) === String(id)); }
 
-    /* ================= AVAILABILITY ================= */
-    function availableSpacesAll(type){
-      const s = readState();
+    function availableSpacesAll(rooms, type){
       let spaces = 0;
-      for (const key in s.rooms[type]){
-        const r = s.rooms[type][key];
-        spaces += Math.max(0, r.meta.capacity - (r.occupants?.length || 0));
+      for (const key in rooms[type]){
+        const r = rooms[type][key];
+        spaces += Math.max(0, (r.meta.capacity||0) - (r.occupants?.length||0));
       }
       return spaces;
     }
-    function availableSpacesGender(type, gender){
-      const s = readState();
-      let spaces = 0;
-      for (const key in s.rooms[type]){
-        const r = s.rooms[type][key];
-        if (r.gender && r.gender !== gender) continue;
-        spaces += Math.max(0, r.meta.capacity - (r.occupants?.length || 0));
-      }
-      return spaces;
-    }
-    function refreshAvailabilityUI(){
-      $("av1").textContent = availableSpacesAll("1");
-      $("av2").textContent = availableSpacesAll("2");
-      $("av3").textContent = availableSpacesAll("3");
 
-      $("a1Admin").textContent = availableSpacesAll("1");
-      $("a2Admin").textContent = availableSpacesAll("2");
-      $("a3Admin").textContent = availableSpacesAll("3");
-    }
-
-    /* ================= ROOMMATES ================= */
-    function syncRoommatesInRoom(state, type, roomKey){
-      const room = state.rooms[type]?.[roomKey];
-      if (!room) return;
-      const ids = room.occupants || [];
-      for (const id of ids){
-        const b = getBookingById(state, id);
-        if (!b) continue;
-        b.roommates = ids
-          .filter(x => String(x) !== String(id))
-          .map(x => getBookingById(state, x))
-          .filter(Boolean)
-          .map(x => x.fullName);
-      }
-    }
-
-    function allocationText(b){
-      if (!b.allocatedRoomKey) return "—";
-      return `${b.building} — Floor ${b.floor} — Room ${b.allocatedRoom}`;
-    }
-
-    /* ================= ALLOCATION ================= */
-    function findRoomKey(state, type, gender){
-      const rooms = state.rooms[type];
-      const keys = Object.keys(rooms).sort((a,b)=>a.localeCompare(b));
-      for (const key of keys){
-        const r = rooms[key];
-        const occ = r.occupants?.length || 0;
-        if (occ >= r.meta.capacity) continue;
-        if (r.gender && r.gender !== gender) continue;
-        return key;
-      }
-      return null;
-    }
-
-    function allocateBooking(state, booking){
-      const type = booking.roomType;
-      const gender = booking.gender;
-
-      const roomKey = findRoomKey(state, type, gender);
-      if (!roomKey){
-        booking.status = "waitlist";
-        booking.allocatedRoomKey = "";
-        booking.allocatedRoom = "";
-        booking.floor = null;
-        booking.building = "";
-        booking.roommates = [];
-        return false;
-      }
-
-      const room = state.rooms[type][roomKey];
-      if (!room.gender) room.gender = gender;
-      room.occupants.push(booking.id);
-
-      booking.status = "allocated";
-      booking.allocatedRoomKey = roomKey;
-      booking.allocatedRoom = room.meta.roomNo;
-      booking.floor = room.meta.floor;
-      booking.building = room.meta.building;
-
-      const otherIds = room.occupants.filter(x => String(x) !== String(booking.id));
-      booking.roommates = otherIds
-        .map(id => getBookingById(state, id))
-        .filter(Boolean)
-        .map(b => b.fullName);
-
-      syncRoommatesInRoom(state, type, roomKey);
-      return true;
-    }
-
-    function releaseRoom(state, booking){
-      if (!booking.allocatedRoomKey) return;
-      const type = booking.roomType;
-      const roomKey = booking.allocatedRoomKey;
-      const room = state.rooms[type]?.[roomKey];
-      if (!room) return;
-
-      room.occupants = (room.occupants || []).filter(x => String(x) !== String(booking.id));
-      if ((room.occupants || []).length === 0) room.gender = null;
-
-      booking.allocatedRoomKey = "";
-      booking.allocatedRoom = "";
-      booking.floor = null;
-      booking.building = "";
-      booking.roommates = [];
-      booking.status = "waitlist";
-
-      syncRoommatesInRoom(state, type, roomKey);
-    }
-
-    /* ================= ADMIN PAIR ROOMMATES ================= */
-    function detachFromRoom(state, booking){
-      if (!booking.allocatedRoomKey) return;
-      const type = booking.roomType;
-      const roomKey = booking.allocatedRoomKey;
-      const room = state.rooms[type]?.[roomKey];
-      if (room){
-        room.occupants = (room.occupants || []).filter(x => String(x) !== String(booking.id));
-        if ((room.occupants || []).length === 0) room.gender = null;
-        syncRoommatesInRoom(state, type, roomKey);
-      }
-      booking.allocatedRoomKey = "";
-      booking.allocatedRoom = "";
-      booking.floor = null;
-      booking.building = "";
-      booking.roommates = [];
-      booking.status = "waitlist";
-    }
-
-    function pairRoommatesByEmail(primaryId, roommateEmail){
-      const state = readState();
-      const A = getBookingById(state, primaryId);
-      if (!A) return showToast("admin","Booking not found.","error");
-
-      const email = String(roommateEmail||"").trim().toLowerCase();
-      const B = state.bookings.find(b => String(b.email||"").trim().toLowerCase() === email);
-
-      if (!B) return showToast("admin","No booking found with that email.","error");
-      if (String(A.id) === String(B.id)) return showToast("admin","You can’t pair the same person.","error");
-
-      if (A.roomType === "1" || B.roomType === "1") return showToast("admin","Pairing is only for 2/3 in a room.","error");
-      if (A.roomType !== B.roomType) return showToast("admin","They must be the same room type (2 or 3).","error");
-      if (A.gender !== B.gender) return showToast("admin","They must be the same gender.","error");
-
-      const type = A.roomType;
-
-      // If A already allocated and has space, move B in
-      if (A.allocatedRoomKey){
-        const room = state.rooms[type][A.allocatedRoomKey];
-        if (room && (room.meta.capacity - (room.occupants?.length||0)) >= 1 && (!room.gender || room.gender === A.gender)){
-          detachFromRoom(state, B);
-          room.gender = A.gender;
-          room.occupants.push(B.id);
-
-          B.status = "allocated";
-          B.allocatedRoomKey = A.allocatedRoomKey;
-          B.allocatedRoom = room.meta.roomNo;
-          B.floor = room.meta.floor;
-          B.building = room.meta.building;
-
-          syncRoommatesInRoom(state, type, A.allocatedRoomKey);
-          saveState(state);
-          showToast("admin", `Paired ✅ Both now in ${allocationText(A)}`);
-
-          sendAcceptedEmail(B);
-          return;
-        }
-      }
-
-      // else find a room with >=2 free spaces
-      const keys = Object.keys(state.rooms[type]).sort((a,b)=>a.localeCompare(b));
-      let chosen = null;
-      for (const k of keys){
-        const room = state.rooms[type][k];
-        if (room.gender && room.gender !== A.gender) continue;
-        const free = room.meta.capacity - (room.occupants?.length||0);
-        if (free >= 2) { chosen = k; break; }
-      }
-      if (!chosen) return showToast("admin","No room has enough space to pair them now.","error");
-
-      detachFromRoom(state, A);
-      detachFromRoom(state, B);
-
-      const room = state.rooms[type][chosen];
-      room.gender = A.gender;
-      room.occupants.push(A.id, B.id);
-
-      for (const person of [A,B]){
-        person.status = "allocated";
-        person.allocatedRoomKey = chosen;
-        person.allocatedRoom = room.meta.roomNo;
-        person.floor = room.meta.floor;
-        person.building = room.meta.building;
-      }
-
-      syncRoommatesInRoom(state, type, chosen);
-      saveState(state);
-      showToast("admin", `Paired ✅ Both now in ${allocationText(A)}`);
-
-      sendAcceptedEmail(A);
-      sendAcceptedEmail(B);
-    }
-
-    /* ================= EMAIL PARAMETERS ================= */
+    // ================== EMAIL CONTENT ==================
     function sendBookingReceivedEmail(b){
       return sendEmail(EMAIL.tplBooking, {
         to_name: b.fullName,
         to_email: b.email,
-        hostel_name: "LIN MART EXECUTIVE HOSTEL",
+        hostel_name: HOSTEL_NAME,
         phone: b.phone,
         gender: genderLabel(b.gender),
         room_type: roomLabel(b.roomType),
@@ -849,12 +662,14 @@
 
     function sendAcceptedEmail(b){
       if (!b.email) return;
-      const mates = (b.roomType !== "1" && b.roommates && b.roommates.length) ? b.roommates.join(", ") : "None";
-      const alloc = allocationText(b);
+      const mates = (b.roomType !== "1" && b.roommates?.length) ? b.roommates.join(", ") : "None";
+      const alloc = b.allocatedRoomKey
+        ? `${b.building} — Floor ${b.floor} — Room ${b.allocatedRoom}`
+        : "—";
       return sendEmail(EMAIL.tplAllocated, {
         to_name: b.fullName,
         to_email: b.email,
-        hostel_name: "LIN MART EXECUTIVE HOSTEL",
+        hostel_name: HOSTEL_NAME,
         phone: b.phone,
         gender: genderLabel(b.gender),
         room_type: roomLabel(b.roomType),
@@ -870,55 +685,319 @@
       });
     }
 
-    /* ================= BOOKING ================= */
-    function readSummary(){
-      const type = $("roomType").value;
-      const gender = $("gender").value;
-      const price = type ? PRICES[type] : null;
+    // ================== ALLOCATION (TRANSACTION) ==================
+    function findRoomKey(rooms, type, gender){
+      const keys = Object.keys(rooms[type]).sort((a,b)=>a.localeCompare(b));
+      for (const key of keys){
+        const r = rooms[type][key];
+        const occ = r.occupants?.length || 0;
+        const cap = r.meta?.capacity || 0;
+        if (occ >= cap) continue;
+        if (r.gender && r.gender !== gender) continue;
+        return key;
+      }
+      return null;
+    }
 
-      $("sumRoom").textContent = type ? roomLabel(type) : "—";
-      $("sumRoomPrice").textContent = price ? formatGHS(price) : "—";
-      $("sumGender").textContent = gender ? genderLabel(gender) : "—";
-
-      if (!type || !gender){
-        $("sumAvail").textContent = "—";
-      } else {
-        const spaces = availableSpacesGender(type, gender);
-        $("sumAvail").textContent = spaces > 0 ? `Available (${spaces} space${spaces===1?"":"s"})` : "No space (Waitlist)";
+    function syncRoommatesInRoom(bookingsById, rooms, type, roomKey){
+      const room = rooms[type]?.[roomKey];
+      if (!room) return;
+      const ids = room.occupants || [];
+      for (const id of ids){
+        const b = bookingsById[id];
+        if (!b) continue;
+        b.roommates = ids.filter(x => x !== id).map(x => bookingsById[x]?.fullName).filter(Boolean);
       }
     }
 
+    async function allocateBookingDoc(bookingDocId){
+      const roomsRef = doc(db, META_COL, ROOMS_DOC);
+      const bookingRef = doc(db, BOOKINGS_COL, bookingDocId);
+
+      const result = await runTransaction(db, async (tx) => {
+        const roomsSnap = await tx.get(roomsRef);
+        const bookingSnap = await tx.get(bookingRef);
+
+        if (!roomsSnap.exists()) throw new Error("Rooms state missing.");
+        if (!bookingSnap.exists()) throw new Error("Booking not found.");
+
+        const roomsState = roomsSnap.data();
+        const b = bookingSnap.data();
+
+        if (b.status === "rejected") return { ok:false, reason:"rejected" };
+        if (b.allocatedRoomKey) return { ok:true, already:true, booking: { id: bookingDocId, ...b } };
+
+        const rooms = roomsState.rooms || defaultRooms();
+        const type = b.roomType;
+        const gender = b.gender;
+
+        const roomKey = findRoomKey(rooms, type, gender);
+        if (!roomKey){
+          tx.update(bookingRef, { status: "waitlist", updatedAt: serverTimestamp() });
+          return { ok:false, reason:"no_space" };
+        }
+
+        const room = rooms[type][roomKey];
+        if (!room.gender) room.gender = gender;
+        room.occupants = room.occupants || [];
+        room.occupants.push(bookingDocId);
+
+        const meta = room.meta;
+        const bookingPatch = {
+          status: "allocated",
+          allocatedRoomKey: roomKey,
+          allocatedRoom: meta.roomNo,
+          floor: meta.floor,
+          building: meta.building,
+          updatedAt: serverTimestamp()
+        };
+
+        tx.update(roomsRef, { rooms, updatedAt: serverTimestamp() });
+        tx.update(bookingRef, bookingPatch);
+
+        return { ok:true, bookingPatch };
+      });
+
+      return result;
+    }
+
+    async function releaseBookingDoc(bookingDocId){
+      const roomsRef = doc(db, META_COL, ROOMS_DOC);
+      const bookingRef = doc(db, BOOKINGS_COL, bookingDocId);
+
+      return runTransaction(db, async (tx) => {
+        const roomsSnap = await tx.get(roomsRef);
+        const bookingSnap = await tx.get(bookingRef);
+        if (!roomsSnap.exists() || !bookingSnap.exists()) return;
+
+        const rooms = roomsSnap.data().rooms || defaultRooms();
+        const b = bookingSnap.data();
+        if (!b.allocatedRoomKey) {
+          tx.update(bookingRef, { status:"waitlist", updatedAt: serverTimestamp() });
+          return;
+        }
+
+        const type = b.roomType;
+        const rk = b.allocatedRoomKey;
+        const room = rooms[type]?.[rk];
+        if (room){
+          room.occupants = (room.occupants || []).filter(x => x !== bookingDocId);
+          if (room.occupants.length === 0) room.gender = null;
+        }
+
+        tx.update(roomsRef, { rooms, updatedAt: serverTimestamp() });
+        tx.update(bookingRef, {
+          status:"waitlist",
+          allocatedRoomKey:"",
+          allocatedRoom:"",
+          floor:null,
+          building:"",
+          roommates: [],
+          updatedAt: serverTimestamp()
+        });
+      });
+    }
+
+    // Pair roommates by email (2/3 only)
+    async function pairRoommatesByEmail(primaryId, roommateEmail){
+      roommateEmail = String(roommateEmail||"").trim().toLowerCase();
+      if (!roommateEmail) return;
+
+      const roomsRef = doc(db, META_COL, ROOMS_DOC);
+
+      return runTransaction(db, async (tx) => {
+        const roomsSnap = await tx.get(roomsRef);
+        if (!roomsSnap.exists()) throw new Error("Rooms missing");
+        const rooms = roomsSnap.data().rooms || defaultRooms();
+
+        // Load all bookings (for pairing + names). For small hostel it’s ok.
+        const snap = await getDocs(collection(db, BOOKINGS_COL));
+        const bookings = {};
+        let A = null, B = null;
+
+        snap.forEach(d=>{
+          const data = d.data();
+          bookings[d.id] = { id:d.id, ...data };
+          if (d.id === primaryId) A = bookings[d.id];
+          if (String(data.email||"").trim().toLowerCase() === roommateEmail) B = bookings[d.id];
+        });
+
+        if (!A || !B) throw new Error("Booking(s) not found");
+        if (A.id === B.id) throw new Error("Same person");
+        if (A.roomType === "1" || B.roomType === "1") throw new Error("Pairing only for 2/3");
+        if (A.roomType !== B.roomType) throw new Error("Different room types");
+        if (A.gender !== B.gender) throw new Error("Different gender");
+
+        const type = A.roomType;
+
+        // choose target room: prefer A room if space
+        let targetKey = A.allocatedRoomKey || "";
+        const cap = ROOM_SETUP[type].capacity;
+
+        function freeSlots(room){ return cap - (room.occupants?.length||0); }
+
+        if (targetKey){
+          const r = rooms[type]?.[targetKey];
+          if (!r || (r.gender && r.gender !== A.gender) || freeSlots(r) < 1) targetKey = "";
+        }
+
+        // else find a room with >=2 free slots
+        if (!targetKey){
+          const keys = Object.keys(rooms[type]).sort((a,b)=>a.localeCompare(b));
+          for (const k of keys){
+            const r = rooms[type][k];
+            if (r.gender && r.gender !== A.gender) continue;
+            if (freeSlots(r) >= 2){ targetKey = k; break; }
+          }
+          if (!targetKey) throw new Error("No room with enough space");
+        }
+
+        // detach from current rooms
+        function detach(id){
+          const b = bookings[id];
+          if (!b || !b.allocatedRoomKey) return;
+          const rk = b.allocatedRoomKey;
+          const rr = rooms[type]?.[rk];
+          if (rr){
+            rr.occupants = (rr.occupants||[]).filter(x => x !== id);
+            if ((rr.occupants||[]).length === 0) rr.gender = null;
+          }
+          b.allocatedRoomKey = "";
+        }
+        detach(A.id);
+        detach(B.id);
+
+        // attach to target
+        const room = rooms[type][targetKey];
+        room.gender = A.gender;
+        room.occupants = room.occupants || [];
+        if (!room.occupants.includes(A.id)) room.occupants.push(A.id);
+        if (!room.occupants.includes(B.id)) room.occupants.push(B.id);
+
+        // sync roommate names
+        const bookingsById = {};
+        Object.values(bookings).forEach(x=> bookingsById[x.id]=x);
+        syncRoommatesInRoom(bookingsById, rooms, type, targetKey);
+
+        // write updates
+        tx.update(roomsRef, { rooms, updatedAt: serverTimestamp() });
+
+        const Aref = doc(db, BOOKINGS_COL, A.id);
+        const Bref = doc(db, BOOKINGS_COL, B.id);
+
+        const meta = room.meta;
+        tx.update(Aref, {
+          status:"allocated",
+          allocatedRoomKey: targetKey,
+          allocatedRoom: meta.roomNo,
+          floor: meta.floor,
+          building: meta.building,
+          roommates: bookingsById[A.id].roommates || [],
+          updatedAt: serverTimestamp()
+        });
+        tx.update(Bref, {
+          status:"allocated",
+          allocatedRoomKey: targetKey,
+          allocatedRoom: meta.roomNo,
+          floor: meta.floor,
+          building: meta.building,
+          roommates: bookingsById[B.id].roommates || [],
+          updatedAt: serverTimestamp()
+        });
+      });
+    }
+
+    // ================== LIVE LISTENERS ==================
+    let unsubscribeBookings = null;
+    let lastRooms = null;
+    let cloudBookings = [];
+
+    async function startRoomsListener(){
+      await ensureRoomsDoc();
+      const ref = doc(db, META_COL, ROOMS_DOC);
+      onSnapshot(ref, (snap)=>{
+        if (!snap.exists()) return;
+        lastRooms = snap.data().rooms || defaultRooms();
+        refreshAvailabilityUI();
+        readSummary();
+        if (!$("adminPanel").classList.contains("hide")) renderAdmin();
+      });
+    }
+
+    function startBookingsListener(){
+      const q = query(collection(db, BOOKINGS_COL), orderBy("createdAt","desc"));
+      unsubscribeBookings = onSnapshot(q, (snap)=>{
+        cloudBookings = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        if (!$("adminPanel").classList.contains("hide")) renderAdmin();
+      });
+    }
+
+    // ================== UI AVAILABILITY ==================
+    function refreshAvailabilityUI(){
+      if (!lastRooms) return;
+      $("av1").textContent = availableSpacesAll(lastRooms, "1");
+      $("av2").textContent = availableSpacesAll(lastRooms, "2");
+      $("av3").textContent = availableSpacesAll(lastRooms, "3");
+      $("a1Admin").textContent = availableSpacesAll(lastRooms, "1");
+      $("a2Admin").textContent = availableSpacesAll(lastRooms, "2");
+      $("a3Admin").textContent = availableSpacesAll(lastRooms, "3");
+    }
+
+    // ================== BOOKING SUBMIT ==================
     function validateBooking(){
       const required = ["fullName","phone","email","school","roomType","moveIn","duration","gender"];
       for (const id of required){
         const el = $(id);
         const val = el.value;
-        if (!val || (typeof val === "string" && val.trim() === "")){
+        if (!val || (typeof val === "string" && val.trim()==="")){
           el.focus();
-          showToast("booking", "Please complete all required fields.", "error");
+          showToast("booking","Please complete all required fields.","error");
           return false;
         }
       }
       if ($("moveIn").value < todayISO()){
         $("moveIn").focus();
-        showToast("booking", "Move-in date cannot be in the past.", "error");
+        showToast("booking","Move-in date cannot be in the past.","error");
         return false;
       }
       const email = $("email").value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
         $("email").focus();
-        showToast("booking", "Please enter a valid email.", "error");
+        showToast("booking","Please enter a valid email.","error");
         return false;
       }
       return true;
     }
 
+    function readSummary(){
+      const type = $("roomType").value;
+      const gender = $("gender").value;
+      $("sumRoom").textContent = type ? roomLabel(type) : "—";
+      $("sumRoomPrice").textContent = type ? formatGHS(PRICES[type]||0) : "—";
+      $("sumGender").textContent = gender ? genderLabel(gender) : "—";
+      if (!type || !gender || !lastRooms){
+        $("sumAvail").textContent = "—";
+        return;
+      }
+      // gender-based availability
+      let spaces = 0;
+      for (const key in lastRooms[type]){
+        const r = lastRooms[type][key];
+        if (r.gender && r.gender !== gender) continue;
+        spaces += Math.max(0, (r.meta.capacity||0) - (r.occupants?.length||0));
+      }
+      $("sumAvail").textContent = spaces > 0 ? `Available (${spaces} space${spaces===1?"":"s"})` : "No space (Waitlist)";
+    }
+
     async function submitBooking(){
       if (!validateBooking()) return;
+      if (!lastRooms) {
+        showToast("booking","Connecting to database... try again in 2 seconds.","error");
+        return;
+      }
 
-      const state = readState();
+      // 1) create booking doc (waitlist first)
       const booking = {
-        id: makeId(),
         fullName: $("fullName").value.trim(),
         phone: $("phone").value.trim(),
         email: $("email").value.trim(),
@@ -934,33 +1013,26 @@
         floor: null,
         building: "",
         roommates: [],
-        paidAt: "",
-        createdAt: new Date().toISOString()
+        paidAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
 
-      state.bookings.unshift(booking);
+      const docRef = await addDoc(collection(db, BOOKINGS_COL), booking);
 
-      // Allocate immediately for 1/2/3
-      const ok = allocateBooking(state, booking);
-      saveState(state);
+      // 2) email: booking received
+      sendBookingReceivedEmail({ ...booking, id: docRef.id });
 
-      // Email: booking received
-      sendBookingReceivedEmail(booking);
+      // 3) allocate (transaction)
+      const allocRes = await allocateBookingDoc(docRef.id);
 
-      if (ok){
-        // Email: accepted/allocation
-        sendAcceptedEmail(booking);
-
-        const mates = (booking.roomType !== "1" && booking.roommates.length)
-          ? `Sharing with: ${booking.roommates.join(", ")}`
-          : (booking.roomType === "1" ? "Private room (no roommate)." : "No roommate assigned yet.");
-
+      // 4) show toast
+      if (allocRes?.ok){
         showToast("booking",
 `Booking submitted ✅
-Allocated: ${allocationText(booking)}
-${mates}
+If a room was available, it has been allocated.
 
-Emails sent to:
+We sent emails to:
 ${booking.email}
 
 Bank payment:
@@ -970,8 +1042,8 @@ ${BANK.accountNumber} (${BANK.bank}, ${BANK.branch})`,
       } else {
         showToast("booking",
 `Booking submitted ✅
-No rooms available for your selection right now.
-You have been placed on the waitlist.
+No room available for your selection.
+You are on the waitlist.
 
 Booking confirmation email sent to:
 ${booking.email}`,
@@ -985,24 +1057,28 @@ ${booking.email}`,
     function resetBooking(){
       $("bookingForm").reset();
       readSummary();
-      showToast("booking", "Form reset.");
+      showToast("booking","Form reset.");
     }
 
-    /* ================= ADMIN ================= */
+    // ================== ADMIN AUTH + RENDER ==================
     function setAdminAuthed(isAuthed){
       $("adminLogin").classList.toggle("hide", isAuthed);
       $("adminPanel").classList.toggle("hide", !isAuthed);
+      if (isAuthed) renderAdmin();
     }
+
     function loginAdmin(){
       const u = $("adminUser").value.trim();
       const p = $("adminPass").value;
-      if (u === ADMIN_USER && p === ADMIN_PASS){
+      if (u===ADMIN_USER && p===ADMIN_PASS){
         sessionStorage.setItem("linmart_admin_auth","1");
         setAdminAuthed(true);
         showToast("admin","Welcome, admin!");
-        renderAdmin();
-      } else showToast("admin","Wrong username or password.","error");
+      } else {
+        showToast("admin","Wrong username or password.","error");
+      }
     }
+
     function logoutAdmin(){
       sessionStorage.removeItem("linmart_admin_auth");
       setAdminAuthed(false);
@@ -1021,13 +1097,18 @@ ${booking.email}`,
       return `<span class="statusPill ${x.cls}">${x.label}</span>`;
     }
 
+    function allocationText(b){
+      if (!b.allocatedRoomKey) return "—";
+      return `${b.building} — Floor ${b.floor} — Room ${b.allocatedRoom}`;
+    }
+
     function applyAdminFilters(list){
       const q = $("search").value.trim().toLowerCase();
       const room = $("filterRoom").value;
       const gender = $("filterGender").value;
       const status = $("filterStatus").value;
 
-      return list.filter(b => {
+      return list.filter(b=>{
         const blob = [
           b.fullName,b.phone,b.email,b.school,b.notes,
           b.roomType,b.gender,b.status,b.allocatedRoom,b.building,(b.floor||"")
@@ -1049,11 +1130,10 @@ ${booking.email}`,
     }
 
     function renderAdmin(){
-      const state = readState();
-      updateKpis(state.bookings);
+      updateKpis(cloudBookings);
       refreshAvailabilityUI();
 
-      const items = applyAdminFilters(state.bookings);
+      const items = applyAdminFilters(cloudBookings);
       const tbody = $("tbody");
       tbody.innerHTML = "";
 
@@ -1068,7 +1148,7 @@ ${booking.email}`,
         const alloc = allocationText(b);
 
         const msg =
-`Hello ${b.fullName}, LIN MART EXECUTIVE HOSTEL here.
+`Hello ${b.fullName}, ${HOSTEL_NAME} here.
 
 Gender: ${genderLabel(b.gender)}
 Room Type: ${roomLabel(String(b.roomType))} (${price})
@@ -1115,112 +1195,84 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       }
     }
 
-    function adminAllocate(id){
-      const state = readState();
-      const b = getBookingById(state, id);
-      if (!b) return;
-
-      if (b.status === "rejected") return showToast("admin","This booking is rejected.","error");
-      if (b.allocatedRoomKey) return showToast("admin","Already allocated.","error");
-
-      const ok = allocateBooking(state, b);
-      saveState(state);
-
-      if (ok){
-        showToast("admin", `Allocated ✅ ${allocationText(b)}`);
-        sendAcceptedEmail(b);
-      } else {
-        showToast("admin", "No room available for this booking right now.", "error");
+    // ================== ADMIN ACTIONS ==================
+    async function adminAllocate(id){
+      try{
+        const res = await allocateBookingDoc(id);
+        if (res?.ok){
+          showToast("admin","Allocated ✅ (if space existed).");
+          // send accepted email (use latest booking data from cloudBookings after snapshot updates)
+          const b = cloudBookings.find(x=>x.id===id);
+          if (b && b.allocatedRoomKey) sendAcceptedEmail(b);
+        } else {
+          showToast("admin","No room available for this booking right now.","error");
+        }
+      } catch(e){
+        console.error(e);
+        showToast("admin", String(e.message||e), "error");
       }
     }
 
-    function adminMarkPaid(id){
-      const state = readState();
-      const b = getBookingById(state, id);
-      if (!b) return;
-      if (!b.allocatedRoomKey) return showToast("admin","Allocate a room first.","error");
-      b.status = "paid";
-      b.paidAt = new Date().toISOString();
-      saveState(state);
-      showToast("admin","Payment confirmed ✅");
+    async function adminMarkPaid(id){
+      try{
+        const ref = doc(db, BOOKINGS_COL, id);
+        await updateDoc(ref, { status:"paid", paidAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        showToast("admin","Payment confirmed ✅");
+      } catch(e){
+        showToast("admin","Failed to mark paid.","error");
+      }
     }
 
-    function adminRelease(id){
-      const state = readState();
-      const b = getBookingById(state, id);
-      if (!b) return;
-      releaseRoom(state, b);
-      saveState(state);
-      showToast("admin","Room released (moved to waitlist).");
+    async function adminRelease(id){
+      try{
+        await releaseBookingDoc(id);
+        showToast("admin","Room released (moved to waitlist).");
+      } catch(e){
+        showToast("admin","Failed to release.","error");
+      }
     }
 
-    function adminReject(id){
-      const state = readState();
-      const b = getBookingById(state, id);
-      if (!b) return;
-      if (b.allocatedRoomKey) releaseRoom(state, b);
-      b.status = "rejected";
-      saveState(state);
-      showToast("admin","Booking rejected.");
+    async function adminReject(id){
+      try{
+        // free room if allocated, then mark rejected
+        await releaseBookingDoc(id);
+        await updateDoc(doc(db, BOOKINGS_COL, id), { status:"rejected", updatedAt: serverTimestamp() });
+        showToast("admin","Booking rejected.");
+      } catch(e){
+        showToast("admin","Failed to reject.","error");
+      }
     }
 
-    function adminResendEmail(id){
-      const state = readState();
-      const b = getBookingById(state, id);
+    async function adminResendEmail(id){
+      const b = cloudBookings.find(x=>x.id===id);
       if (!b) return;
       sendBookingReceivedEmail(b);
       if (b.allocatedRoomKey) sendAcceptedEmail(b);
-      showToast("admin","Email sent ✅ (check EmailJS logs if not received).");
+      showToast("admin","Email resent (check EmailJS logs if not received).");
     }
 
-    function clearAll(){
-      const ok = confirm("Delete ALL bookings and reset rooms? This cannot be undone.");
+    async function adminClearAll(){
+      const ok = confirm("Delete ALL bookings? (Rooms will be reset too). This cannot be undone.");
       if (!ok) return;
-      localStorage.removeItem(STORAGE_KEY);
-      showToast("admin","All cleared.");
-      refreshAvailabilityUI();
-      renderAdmin();
-    }
 
-    function seedSamples(){
-      const state = readState();
-      const samples = [
-        { fullName:"Ama Mensah", phone:"0240000000", email:"ama@example.com", school:"University", gender:"female", roomType:"2" },
-        { fullName:"Esi Agyemang", phone:"0200000000", email:"esi@example.com", school:"University", gender:"female", roomType:"2" },
-        { fullName:"Kojo Boateng", phone:"0550000000", email:"kojo@example.com", school:"Polytechnic", gender:"male", roomType:"3" },
-        { fullName:"Yaw Owusu", phone:"0500000000", email:"yaw@example.com", school:"Polytechnic", gender:"male", roomType:"1" }
-      ];
+      try{
+        // delete bookings
+        const snap = await getDocs(collection(db, BOOKINGS_COL));
+        const deletes = [];
+        snap.forEach(d => deletes.push(deleteDoc(doc(db, BOOKINGS_COL, d.id))));
+        await Promise.all(deletes);
 
-      for (const s of samples){
-        const b = {
-          id: makeId(),
-          fullName: s.fullName,
-          phone: s.phone,
-          email: s.email,
-          school: s.school,
-          gender: s.gender,
-          roomType: s.roomType,
-          duration: 1,
-          moveInDate: new Date(Date.now()+86400000*7).toISOString().slice(0,10),
-          notes: "",
-          status: "waitlist",
-          allocatedRoomKey: "",
-          allocatedRoom: "",
-          floor: null,
-          building: "",
-          roommates: [],
-          paidAt: "",
-          createdAt: new Date().toISOString()
-        };
-        state.bookings.unshift(b);
-        allocateBooking(state, b);
+        // reset rooms
+        await setDoc(doc(db, META_COL, ROOMS_DOC), { rooms: defaultRooms(), updatedAt: serverTimestamp() });
+
+        showToast("admin","All bookings cleared and rooms reset.");
+      } catch(e){
+        console.error(e);
+        showToast("admin","Failed to clear all.","error");
       }
-      saveState(state);
-      showToast("admin","Sample bookings loaded.");
-      renderAdmin();
     }
 
-    /* ================= VIEW SWITCH ================= */
+    // ================== VIEW SWITCH ==================
     function setView(which){
       const isBooking = which === "booking";
       $("viewBooking").classList.toggle("hide", !isBooking);
@@ -1235,30 +1287,26 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       if (!isBooking){
         const authed = sessionStorage.getItem("linmart_admin_auth") === "1";
         setAdminAuthed(authed);
-        if (authed) renderAdmin();
       }
     }
 
-    /* ================= EVENTS ================= */
+    // ================== EVENTS ==================
     $("tabBooking").addEventListener("click", ()=>setView("booking"));
     $("tabAdmin").addEventListener("click", ()=>setView("admin"));
-
     ["roomType","duration","gender"].forEach(id => $(id).addEventListener("change", readSummary));
     $("submitBtn").addEventListener("click", submitBooking);
     $("resetBtn").addEventListener("click", resetBooking);
 
     $("loginBtn").addEventListener("click", loginAdmin);
     $("logoutBtn").addEventListener("click", logoutAdmin);
-    $("seedBtn").addEventListener("click", seedSamples);
+    $("clearBtn").addEventListener("click", adminClearAll);
 
     ["search","filterRoom","filterGender","filterStatus"].forEach(id => {
       $(id).addEventListener("input", renderAdmin);
       $(id).addEventListener("change", renderAdmin);
     });
 
-    $("clearBtn").addEventListener("click", clearAll);
-
-    document.addEventListener("click", (e)=>{
+    document.addEventListener("click", async (e)=>{
       const btn = e.target.closest("button[data-act]");
       if (!btn) return;
       const act = btn.dataset.act;
@@ -1273,19 +1321,29 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       if (act === "pair"){
         const roommateEmail = prompt("Enter roommate email (must already have a booking):");
         if (!roommateEmail) return;
-        return pairRoommatesByEmail(id, roommateEmail);
+        try{
+          await pairRoommatesByEmail(id, roommateEmail);
+          showToast("admin","Paired ✅");
+          // resend accepted emails for both (after snapshots update)
+          setTimeout(()=>{
+            const A = cloudBookings.find(x=>x.id===id);
+            if (A && A.allocatedRoomKey) sendAcceptedEmail(A);
+          }, 1200);
+        } catch(err){
+          showToast("admin", String(err.message||err), "error");
+        }
+        return;
       }
 
       if (act === "wa"){
-        const state = readState();
-        const b = getBookingById(state, id);
+        const b = cloudBookings.find(x=>x.id===id);
         if (!b) return;
 
         const price = formatGHS(PRICES[String(b.roomType)] || 0);
         const mates = (b.roommates && b.roommates.length) ? b.roommates.join(", ") : "—";
 
         const msg =
-`Hello ${b.fullName}, LIN MART EXECUTIVE HOSTEL here.
+`Hello ${b.fullName}, ${HOSTEL_NAME} here.
 
 Gender: ${genderLabel(b.gender)}
 Room Type: ${roomLabel(String(b.roomType))} (${price})
@@ -1305,15 +1363,17 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       }
     });
 
-    /* ================= INIT ================= */
+    // ================== INIT ==================
     (function init(){
       $("year").textContent = new Date().getFullYear();
       $("moveIn").min = todayISO();
-      refreshAvailabilityUI();
       readSummary();
 
       const authed = sessionStorage.getItem("linmart_admin_auth") === "1";
       setAdminAuthed(authed);
+
+      startRoomsListener();
+      startBookingsListener();
     })();
   </script>
 </body>
