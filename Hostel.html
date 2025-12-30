@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LIN MART EXECUTIVE HOSTEL — Booking • Status • Admin</title>
-  <meta name="description" content="LIN MART EXECUTIVE HOSTEL booking system with Firebase sync + EmailJS emails (no PHP). Students can check status with a reference code." />
+  <meta name="description" content="LIN MART EXECUTIVE HOSTEL booking and allocation system. Students receive a booking reference code to track status." />
 
   <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -155,9 +155,8 @@
     <div class="brand">
       <h1>LIN MART EXECUTIVE HOSTEL</h1>
       <p>
-        ✅ Students get a <strong>Reference Code</strong> after booking and can check status anytime.
-        <br/>✅ Admin approves booking to allocate a room (Email #2 is sent only on approval).
-        <br/><span class="mono">No PHP • Firebase Firestore + Firebase Auth (admin) + EmailJS.</span>
+        Submit your accommodation request online and receive a <strong>Booking Reference Code</strong>.
+        Use the reference code to check your status anytime. Allocation details and payment instructions are sent after approval.
       </p>
     </div>
 
@@ -204,14 +203,14 @@
           Account Number: <span class="mono">1621180004574</span><br/>
           Bank: <span class="mono">GCB</span>, Branch: <span class="mono">HAATSO BRANCH</span><br/>
           <br/>
-          <strong>Important:</strong> Payment is made <strong>after approval</strong>. Approval email includes your room details.
+          <strong>Payment Notice:</strong> Payment is made <strong>after approval</strong>. Your approval email will include allocation details.
         </div>
       </section>
 
       <aside class="card">
         <div class="head">
           <h2>Book a Room</h2>
-          <p>Email is required. You will receive a <strong>Reference Code</strong> to check status.</p>
+          <p>Provide a valid email address so we can send your reference code and updates.</p>
         </div>
 
         <div id="toastBooking" class="toast" role="status" aria-live="polite"></div>
@@ -220,7 +219,7 @@
           <div class="row">
             <div>
               <label for="fullName">Full name</label>
-              <input id="fullName" type="text" placeholder="e.g., Edric Atebi" required minlength="2" />
+              <input id="fullName" type="text" placeholder="e.g., Ama Mensah" required minlength="2" />
             </div>
             <div>
               <label for="phone">Phone number</label>
@@ -246,7 +245,7 @@
           <div class="row">
             <div>
               <label for="school">School / Institution</label>
-              <input id="school" type="text" placeholder="e.g., University of ..." required />
+              <input id="school" type="text" placeholder="e.g., University of Ghana" required />
             </div>
             <div>
               <label for="roomType">Room type</label>
@@ -292,8 +291,8 @@
         </div>
 
         <div class="note">
-          Email #1: sent on booking (<span class="mono">template_lkwqlmo</span>)<br/>
-          Email #2: sent only when admin approves (<span class="mono">template_pp7xixk</span>)
+          After submission, you will receive an email with your <strong>Booking Reference Code</strong>.
+          Keep it safe—you will use it to check your booking status.
         </div>
       </aside>
     </div>
@@ -304,7 +303,7 @@
     <div class="card">
       <div class="head">
         <h2>Check Booking Status</h2>
-        <p>Enter the <strong>Reference Code</strong> from your booking email (Example: <span class="mono">LM-AB12CD-1234</span>).</p>
+        <p>Enter the <strong>Booking Reference Code</strong> you received by email.</p>
       </div>
 
       <div id="toastStatus" class="toast" role="status" aria-live="polite"></div>
@@ -312,7 +311,7 @@
       <form id="statusForm" novalidate>
         <div class="row">
           <div>
-            <label for="statusCode">Reference Code</label>
+            <label for="statusCode">Booking Reference Code</label>
             <input id="statusCode" type="text" placeholder="e.g., LM-AB12CD-1234" />
           </div>
           <div>
@@ -329,7 +328,7 @@
         </div>
 
         <div class="note">
-          If you can’t find your Reference Code, check your inbox/spam for the booking confirmation email.
+          If you cannot find your reference code, please check your inbox/spam for the confirmation email.
         </div>
       </form>
     </div>
@@ -340,7 +339,7 @@
     <div class="card">
       <div class="head">
         <h2>Admin Dashboard</h2>
-        <p>Admins must sign in with Firebase Authentication. Approve to allocate rooms and send the approval email.</p>
+        <p>Sign in to review applications, approve bookings, allocate rooms, and manage payments.</p>
       </div>
 
       <div id="toastAdmin" class="toast" role="status" aria-live="polite"></div>
@@ -360,7 +359,7 @@
           <button id="loginBtn" class="btn-primary" type="button">Sign in</button>
         </div>
         <div class="note" style="padding:12px 0 0;">
-          Only admin UIDs you listed are allowed by Firestore Rules.
+          Access is restricted to authorized administrators.
         </div>
       </div>
 
@@ -424,7 +423,7 @@
         </div>
 
         <div class="note">
-          “Approve” allocates a room (if available) and sends Email #2.
+          “Approve” allocates a room (if available) and sends the allocation email to the student.
         </div>
       </div>
     </div>
@@ -478,8 +477,8 @@
   const EMAIL = {
     publicKey: "u7PnlhwIw05D-Rqh9",
     serviceId: "service_agply6t",
-    tplBooking: "template_lkwqlmo",    // Email #1 (Booking received)
-    tplApproved: "template_pp7xixk"    // Email #2 (Approval/Allocation)
+    tplBooking: "template_lkwqlmo",   // booking received
+    tplApproved: "template_pp7xixk"   // approved/allocation
   };
 
   if (window.emailjs && EMAIL.publicKey) window.emailjs.init(EMAIL.publicKey);
@@ -511,10 +510,6 @@
   const MAIN_BUILDING = "Main Building";
   const SINGLE_BUILDING = "Single Building";
 
-  // Rooms:
-  // 1-in: single building, 2 floors, 6 rooms each floor (12 rooms), cap 1
-  // 2-in: main building, 3 floors, 8 rooms each floor (24 rooms), cap 2
-  // 3-in: main building, floors 1-2, rooms 09-11 each floor (6 rooms), cap 3
   const ROOM_SETUP = {
     "1": {
       building: SINGLE_BUILDING,
@@ -586,7 +581,6 @@
   }
 
   function makeRefCode(){
-    // Example: LM-AB12CD-1234
     const part = Math.random().toString(36).slice(2, 8).toUpperCase();
     const tail = Date.now().toString().slice(-4);
     return `LM-${part}-${tail}`;
@@ -646,7 +640,6 @@
 
   // ================== EMAILS ==================
   function sendBookingReceivedEmail(b){
-    // Make sure your EmailJS template #1 includes {{ref_code}}
     return sendEmail(EMAIL.tplBooking, {
       to_name: b.fullName,
       to_email: b.email,
@@ -664,7 +657,6 @@
     const mates = (b.roomType !== "1" && b.roommates?.length) ? b.roommates.join(", ") : "None";
     const alloc = allocationText(b);
 
-    // Make sure your EmailJS template #2 includes allocation/payment details
     return sendEmail(EMAIL.tplApproved, {
       to_name: b.fullName,
       to_email: b.email,
@@ -685,7 +677,7 @@
     });
   }
 
-  // ================== ALLOCATION (APPROVE) ==================
+  // ================== APPROVAL / ALLOCATION ==================
   function findRoomKey(rooms, type, gender){
     const keys = Object.keys(rooms[type]).sort((a,b)=>a.localeCompare(b));
     for (const key of keys){
@@ -716,14 +708,9 @@
       if (b.status === "rejected") return { ok:false, reason:"rejected" };
       if (b.status === "approved" && b.allocatedRoomKey) return { ok:true, already:true };
 
-      const type = b.roomType;
-      const gender = b.gender;
-
-      const roomKey = findRoomKey(rooms, type, gender);
+      const roomKey = findRoomKey(rooms, b.roomType, b.gender);
       if (!roomKey){
-        // keep on waitlist
         tx.update(bookingRef, { status:"waitlist", updatedAt: serverTimestamp() });
-        // update public status too
         if (b.refCode){
           tx.set(doc(db, PUBLIC_COL, b.refCode), {
             status: "waitlist",
@@ -735,14 +722,13 @@
         return { ok:false, reason:"no_space" };
       }
 
-      const room = rooms[type][roomKey];
-      if (!room.gender) room.gender = gender;
+      const room = rooms[b.roomType][roomKey];
+      if (!room.gender) room.gender = b.gender;
       room.occupants = room.occupants || [];
       if (!room.occupants.includes(bookingId)) room.occupants.push(bookingId);
 
       const meta = room.meta;
-
-      const bookingPatch = {
+      const patch = {
         status: "approved",
         allocatedRoomKey: roomKey,
         allocatedRoom: meta.roomNo,
@@ -752,15 +738,14 @@
       };
 
       tx.update(roomsRef, { rooms, updatedAt: serverTimestamp() });
-      tx.update(bookingRef, bookingPatch);
+      tx.update(bookingRef, patch);
 
-      // public status update
       if (b.refCode){
         const allocTxt = `${meta.building} — Floor ${meta.floor} — Room ${meta.roomNo}`;
         tx.set(doc(db, PUBLIC_COL, b.refCode), {
           status: "approved",
           allocation: allocTxt,
-          roommates: [], // will stay empty unless you later add pairing logic
+          roommates: [],
           updatedAt: serverTimestamp()
         }, { merge:true });
       }
@@ -782,9 +767,7 @@
       const b = bookingSnap.data();
 
       if (b.allocatedRoomKey){
-        const type = b.roomType;
-        const rk = b.allocatedRoomKey;
-        const room = rooms[type]?.[rk];
+        const room = rooms[b.roomType]?.[b.allocatedRoomKey];
         if (room){
           room.occupants = (room.occupants || []).filter(x => x !== bookingId);
           if (room.occupants.length === 0) room.gender = null;
@@ -836,7 +819,7 @@
       renderAdmin();
     }, (err)=>{
       console.error(err);
-      showToast("admin","Permission denied. Check Firestore rules/admin UID.","error");
+      showToast("admin","Access denied. Please confirm admin sign-in.", "error");
     });
   }
 
@@ -847,7 +830,7 @@
     renderAdmin();
   }
 
-  // ================== UI AVAILABILITY + SUMMARY ==================
+  // ================== UI ==================
   function refreshAvailabilityUI(){
     if (!lastRooms) return;
     $("av1").textContent = availableSpacesAll(lastRooms, "1");
@@ -901,12 +884,11 @@
   async function submitBooking(){
     if (!validateBooking()) return;
     if (!lastRooms){
-      showToast("booking","Connecting... try again in 2 seconds.","error");
+      showToast("booking","Connecting... try again in a moment.","error");
       return;
     }
 
     const refCode = makeRefCode();
-
     const booking = {
       fullName: $("fullName").value.trim(),
       phone: $("phone").value.trim(),
@@ -918,7 +900,7 @@
       moveInDate: $("moveIn").value,
       notes: $("notes").value.trim(),
       refCode,
-      status: "pending",              // ✅ pending until admin approves
+      status: "pending",
       allocatedRoomKey: "",
       allocatedRoom: "",
       floor: null,
@@ -929,10 +911,8 @@
       updatedAt: serverTimestamp()
     };
 
-    // Save booking (students are allowed to CREATE only by rules)
-    const docRef = await addDoc(collection(db, BOOKINGS_COL), booking);
+    await addDoc(collection(db, BOOKINGS_COL), booking);
 
-    // Create public status record (students can READ by code, admin can WRITE)
     await setDoc(doc(db, PUBLIC_COL, refCode), {
       status: "pending",
       allocation: "",
@@ -940,17 +920,15 @@
       updatedAt: serverTimestamp()
     });
 
-    // Email #1 only
     await sendBookingReceivedEmail(booking);
 
     showToast("booking",
-`Booking submitted ✅
-Reference Code: ${refCode}
+`Booking submitted successfully.
 
-A confirmation email was sent to:
-${booking.email}
+Booking Reference Code: ${refCode}
 
-Use “Check Status” tab anytime with your Reference Code.`,
+A confirmation email has been sent to:
+${booking.email}`,
 "success");
 
     $("bookingForm").reset();
@@ -971,14 +949,14 @@ Use “Check Status” tab anytime with your Reference Code.`,
   async function checkStatus(){
     const code = normalizeRef($("statusCode").value);
     if (!code){
-      showToast("status","Enter your Reference Code.","error");
+      showToast("status","Enter your booking reference code.","error");
       return;
     }
 
     try{
       const snap = await getDoc(doc(db, PUBLIC_COL, code));
       if (!snap.exists()){
-        showToast("status","No booking found for that Reference Code.","error");
+        showToast("status","No booking found for that reference code.","error");
         $("stStatus").textContent = "—";
         $("stAlloc").textContent = "—";
         $("stMates").textContent = "—";
@@ -992,10 +970,10 @@ Use “Check Status” tab anytime with your Reference Code.`,
       $("stMates").textContent = (d.roommates && d.roommates.length) ? d.roommates.join(", ") : "—";
       $("stUpdated").textContent = fmtDateTime(d.updatedAt);
 
-      showToast("status","Status loaded ✅");
+      showToast("status","Status loaded.");
     }catch(e){
       console.error(e);
-      showToast("status","Failed to check status. Try again.","error");
+      showToast("status","Unable to load status. Please try again.","error");
     }
   }
 
@@ -1011,9 +989,9 @@ Use “Check Status” tab anytime with your Reference Code.`,
     const pass = $("adminPass").value;
     try{
       await signInWithEmailAndPassword(auth, email, pass);
-      showToast("admin","Signed in ✅");
+      showToast("admin","Signed in successfully.");
     }catch(e){
-      showToast("admin","Login failed: " + (e.message || e), "error");
+      showToast("admin","Sign-in failed. Please check your details.","error");
     }
   }
 
@@ -1072,7 +1050,7 @@ Use “Check Status” tab anytime with your Reference Code.`,
     tbody.innerHTML = "";
 
     if (!items.length){
-      tbody.innerHTML = `<tr><td colspan="9" style="padding:16px; color:var(--muted);">No bookings found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="padding:16px; color:var(--muted);">No applications found.</td></tr>`;
       return;
     }
 
@@ -1087,7 +1065,7 @@ Use “Check Status” tab anytime with your Reference Code.`,
 Reference: ${b.refCode || "—"}
 Room Type: ${roomLabel(String(b.roomType))} (${price})
 Status: ${(b.status||"pending").toUpperCase()}
-Allocated: ${alloc}
+Allocation: ${alloc}
 
 Bank payment (after approval):
 ${BANK.accountName}
@@ -1117,8 +1095,8 @@ ${BANK.bank} — ${BANK.branch}`.trim();
             <button class="btn-primary" data-act="paid" data-id="${escapeHtml(b.id)}" type="button">Mark Paid</button>
             <button class="btn-ghost" data-act="release" data-id="${escapeHtml(b.id)}" type="button">Release</button>
             <button class="btn-warn" data-act="reject" data-id="${escapeHtml(b.id)}" type="button">Reject</button>
-            <button class="btn-primary" data-act="email1" data-id="${escapeHtml(b.id)}" type="button">Resend Email #1</button>
-            <button class="btn-primary" data-act="email2" data-id="${escapeHtml(b.id)}" type="button">Resend Email #2</button>
+            <button class="btn-primary" data-act="email1" data-id="${escapeHtml(b.id)}" type="button">Resend Confirmation</button>
+            <button class="btn-primary" data-act="email2" data-id="${escapeHtml(b.id)}" type="button">Resend Allocation</button>
             <button class="btn-primary" data-act="wa" data-id="${escapeHtml(b.id)}" type="button" ${wlink ? "" : "disabled"}>WhatsApp</button>
           </div>
         </td>
@@ -1130,32 +1108,28 @@ ${BANK.bank} — ${BANK.branch}`.trim();
   // ================== ADMIN ACTIONS ==================
   async function adminApprove(id){
     try{
-      const before = cloudBookings.find(x=>x.id===id);
-      if (!before) return;
-
       const res = await approveBookingTransaction(id);
 
       if (!res?.ok){
-        showToast("admin","No room available right now. Student moved to WAITLIST.", "error");
+        showToast("admin","No room available at the moment. Applicant moved to the waitlist.", "error");
         return;
       }
 
-      showToast("admin","Approved ✅ Room allocated. Sending Email #2...");
+      showToast("admin","Approved and allocated. Sending allocation email...");
 
-      // after snapshot update, get the latest version and send Email #2
       setTimeout(async ()=>{
         const latest = cloudBookings.find(x=>x.id===id);
         if (latest && latest.status === "approved" && latest.allocatedRoomKey){
           await sendApprovedEmail(latest);
-          showToast("admin","Email #2 sent ✅");
+          showToast("admin","Allocation email sent.");
         } else {
-          showToast("admin","Approved, but could not send Email #2 (missing allocation).", "error");
+          showToast("admin","Approved, but allocation email could not be sent.", "error");
         }
       }, 1200);
 
     }catch(e){
       console.error(e);
-      showToast("admin","Approve failed: " + (e.message || e), "error");
+      showToast("admin","Approval failed. Please try again.", "error");
     }
   }
 
@@ -1166,24 +1140,23 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       if (b?.refCode){
         await setDoc(doc(db, PUBLIC_COL, b.refCode), { status:"paid", updatedAt: serverTimestamp() }, { merge:true });
       }
-      showToast("admin","Payment confirmed ✅");
+      showToast("admin","Payment confirmed.");
     }catch(e){
-      showToast("admin","Failed to mark paid.", "error");
+      showToast("admin","Unable to mark as paid.", "error");
     }
   }
 
   async function adminRelease(id){
     try{
       await releaseBookingTransaction(id);
-      showToast("admin","Released ✅ back to PENDING (room freed).");
+      showToast("admin","Allocation released and moved back to pending.");
     }catch(e){
-      showToast("admin","Failed to release.", "error");
+      showToast("admin","Unable to release booking.", "error");
     }
   }
 
   async function adminReject(id){
     try{
-      // release room first if allocated
       await releaseBookingTransaction(id);
       await updateDoc(doc(db, BOOKINGS_COL, id), { status:"rejected", updatedAt: serverTimestamp() });
 
@@ -1194,7 +1167,7 @@ ${BANK.bank} — ${BANK.branch}`.trim();
 
       showToast("admin","Booking rejected.");
     }catch(e){
-      showToast("admin","Failed to reject.", "error");
+      showToast("admin","Unable to reject booking.", "error");
     }
   }
 
@@ -1202,44 +1175,41 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     const b = cloudBookings.find(x=>x.id===id);
     if (!b) return;
     await sendBookingReceivedEmail(b);
-    showToast("admin","Email #1 resent ✅");
+    showToast("admin","Confirmation email resent.");
   }
 
   async function resendEmail2(id){
     const b = cloudBookings.find(x=>x.id===id);
     if (!b) return;
     if (b.status !== "approved" || !b.allocatedRoomKey){
-      showToast("admin","This booking is not approved/allocated yet.", "error");
+      showToast("admin","This booking has not been approved/allocated yet.", "error");
       return;
     }
     await sendApprovedEmail(b);
-    showToast("admin","Email #2 resent ✅");
+    showToast("admin","Allocation email resent.");
   }
 
   async function adminClearAll(){
-    const ok = confirm("Delete ALL bookings and reset rooms + public status? This cannot be undone.");
+    const ok = confirm("Delete ALL bookings and reset availability? This cannot be undone.");
     if (!ok) return;
 
     try{
-      // delete bookings
       const bsnap = await getDocs(collection(db, BOOKINGS_COL));
       const deletes = [];
       bsnap.forEach(d => deletes.push(deleteDoc(doc(db, BOOKINGS_COL, d.id))));
       await Promise.all(deletes);
 
-      // delete public statuses
       const psnap = await getDocs(collection(db, PUBLIC_COL));
       const deletes2 = [];
       psnap.forEach(d => deletes2.push(deleteDoc(doc(db, PUBLIC_COL, d.id))));
       await Promise.all(deletes2);
 
-      // reset rooms
       await setDoc(doc(db, META_COL, ROOMS_DOC), { rooms: defaultRooms(), updatedAt: serverTimestamp() });
 
-      showToast("admin","All cleared ✅");
+      showToast("admin","All records cleared and availability reset.");
     }catch(e){
       console.error(e);
-      showToast("admin","Clear all failed.", "error");
+      showToast("admin","Unable to clear records.", "error");
     }
   }
 
@@ -1308,7 +1278,7 @@ ${BANK.bank} — ${BANK.branch}`.trim();
 Reference: ${b.refCode || "—"}
 Room Type: ${roomLabel(String(b.roomType))} (${price})
 Status: ${(b.status||"pending").toUpperCase()}
-Allocated: ${alloc}
+Allocation: ${alloc}
 
 Bank payment:
 ${BANK.accountName}
@@ -1328,7 +1298,6 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     readSummary();
     startRoomsListener();
 
-    // Admin data only after Firebase Auth login (because rules block others)
     onAuthStateChanged(auth, (user)=>{
       if (user){
         setAdminAuthed(true);
