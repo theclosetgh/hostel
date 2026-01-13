@@ -6,7 +6,7 @@
   <title>LIN MART EXECUTIVE HOSTEL — Booking • Status • Admin</title>
   <meta name="description" content="LIN MART EXECUTIVE HOSTEL booking and allocation system. Students receive a booking reference code to track status." />
 
-  <!-- EmailJS (kept for your existing templates; optional to use) -->
+  <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
   <!-- Excel Export (SheetJS) -->
@@ -174,7 +174,6 @@
         Submit your accommodation request online and receive a <strong>Booking Reference Code</strong>.
         Use the reference code to check your status anytime. Allocation details and payment instructions are sent after approval.
       </p>
-
       <div class="topBadges">
         <span id="badgeBookings" class="badge info">Loading booking status…</span>
       </div>
@@ -183,8 +182,7 @@
     <div class="tabs" role="tablist" aria-label="Switch view">
       <a class="tabbtn" id="tabBooking" href="#booking" role="tab" aria-selected="true">Booking</a>
       <a class="tabbtn" id="tabStatus" href="#status" role="tab" aria-selected="false">Check Status</a>
-
-      <!-- OPTION A: ADMIN TAB HIDDEN (admin uses /#admin link) -->
+      <!-- OPTION A: Hidden from normal users. Admin uses /#admin -->
       <a class="tabbtn" id="tabAdmin" href="#admin" role="tab" aria-selected="false" style="display:none;">Admin</a>
     </div>
   </header>
@@ -280,7 +278,11 @@
             </div>
           </div>
 
-          <!-- NEW BIODATA FIELDS -->
+          <div>
+            <label for="homeAddress">Home Address</label>
+            <input id="homeAddress" type="text" placeholder="e.g., Haatso, Accra (near X)" required />
+          </div>
+
           <div class="row">
             <div>
               <label for="studentId">Student ID</label>
@@ -465,7 +467,7 @@
                 <th>Allocation</th>
                 <th>Roommates</th>
                 <th>Reference</th>
-                <th style="min-width:740px;">Actions</th>
+                <th style="min-width:760px;">Actions</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -524,7 +526,7 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  // ================== EMAILJS (optional usage) ==================
+  // ================== EMAILJS ==================
   const EMAIL = {
     publicKey: "u7PnlhwIw05D-Rqh9",
     serviceId: "service_agply6t",
@@ -711,7 +713,7 @@
     }
   }
 
-  // ================== EMAILS (optional) ==================
+  // ================== EMAILS ==================
   function sendBookingReceivedEmail(b){
     return sendEmail(EMAIL.tplBooking, {
       to_name: b.fullName,
@@ -845,6 +847,7 @@
         floor:null,
         building:"",
         roommates: [],
+        approvedAt: null,
         updatedAt: serverTimestamp()
       });
 
@@ -917,7 +920,7 @@
   function validateBooking(){
     const required = [
       "fullName","phone","email","school","roomType","moveIn","duration","gender",
-      "studentId","nationality","emergencyName","guardianPhone"
+      "studentId","nationality","emergencyName","guardianPhone","homeAddress"
     ];
     for (const id of required){
       const el = $(id);
@@ -962,7 +965,6 @@
     try{
       const refCode = makeRefCode();
       const booking = {
-        // Core
         fullName: $("fullName").value.trim(),
         phone: $("phone").value.trim(),
         email: $("email").value.trim(),
@@ -973,7 +975,10 @@
         moveInDate: $("moveIn").value,
         notes: $("notes").value.trim(),
 
-        // New biodata
+        // NEW: home address (where they stay)
+        homeAddress: $("homeAddress").value.trim(),
+
+        // Biodata
         studentId: $("studentId").value.trim(),
         nationality: $("nationality").value.trim(),
         emergencyContact: $("emergencyName").value.trim(),
@@ -1002,7 +1007,6 @@
         updatedAt: serverTimestamp()
       }, { merge:true });
 
-      // Optional EmailJS booking received
       await sendBookingReceivedEmail(booking);
 
       showToast("booking",
@@ -1108,7 +1112,7 @@ ${booking.email}`,
     return list.filter(b=>{
       const blob = [
         b.fullName,b.phone,b.email,b.school,b.notes,
-        b.studentId,b.nationality,b.emergencyContact,b.guardianPhone,
+        b.studentId,b.nationality,b.emergencyContact,b.guardianPhone,b.homeAddress,
         b.roomType,b.gender,b.status,b.allocatedRoom,b.building,(b.floor||""), b.refCode
       ].join(" ").toLowerCase();
 
@@ -1155,6 +1159,7 @@ ${booking.email}`,
           <div style="color:var(--muted);">${escapeHtml(b.phone || "")}</div>
           <div style="color:var(--muted);">${escapeHtml(b.email || "")}</div>
           <div style="color:var(--muted);">${escapeHtml(b.school || "")}</div>
+          <div style="color:var(--muted);">Home Address: ${escapeHtml(b.homeAddress || "—")}</div>
           <div style="color:var(--muted);">Student ID: ${escapeHtml(b.studentId || "—")}</div>
           <div style="color:var(--muted);">Nationality: ${escapeHtml(b.nationality || "—")}</div>
           <div style="color:var(--muted);">Emergency: ${escapeHtml(b.emergencyContact || "—")} (${escapeHtml(b.guardianPhone || "—")})</div>
@@ -1186,6 +1191,39 @@ ${booking.email}`,
     return { id: snap.id, ...snap.data() };
   }
 
+  // ================== RESIDENTS (Mark Paid) ==================
+  async function upsertResidentFromBooking(bookingId){
+    const b = await fetchBookingFresh(bookingId);
+    if (!b) return;
+
+    await setDoc(doc(db, RESIDENTS_COL, bookingId), {
+      bookingId: bookingId,
+      fullName: b.fullName || "",
+      gender: b.gender || "",
+      phone: b.phone || "",
+      email: b.email || "",
+      school: b.school || "",
+      studentId: b.studentId || "",
+      nationality: b.nationality || "",
+      emergencyContact: b.emergencyContact || "",
+      guardianPhone: b.guardianPhone || "",
+      homeAddress: b.homeAddress || "",
+
+      roomType: String(b.roomType || ""),
+      building: b.building || "",
+      floor: b.floor ?? "",
+      roomNo: b.allocatedRoom || "",
+      refCode: b.refCode || "",
+
+      status: "confirmed",
+      bookedAt: b.createdAt || null,
+      approvedAt: b.approvedAt || null,
+      paidAt: b.paidAt || null,
+      notes: b.notes || "",
+      updatedAt: serverTimestamp()
+    }, { merge:true });
+  }
+
   // ================== ADMIN ACTIONS ==================
   async function adminApprove(id){
     try{
@@ -1194,6 +1232,7 @@ ${booking.email}`,
         showToast("admin","No room available. Applicant moved to waitlist.", "error");
         return;
       }
+
       showToast("admin","Approved and allocated. Sending allocation email...");
 
       const fresh = await fetchBookingFresh(id);
@@ -1209,37 +1248,6 @@ ${booking.email}`,
     }
   }
 
-  async function upsertResidentFromBooking(bookingId){
-    const b = await fetchBookingFresh(bookingId);
-    if (!b) return;
-
-    const toStr = (x)=> (x===null || x===undefined) ? "" : String(x);
-
-    await setDoc(doc(db, RESIDENTS_COL, bookingId), {
-      bookingId: bookingId,
-      fullName: b.fullName || "",
-      gender: b.gender || "",
-      phone: b.phone || "",
-      email: b.email || "",
-      school: b.school || "",
-      studentId: b.studentId || "",
-      nationality: b.nationality || "",
-      emergencyContact: b.emergencyContact || "",
-      guardianPhone: b.guardianPhone || "",
-      roomType: toStr(b.roomType),
-      building: b.building || "",
-      floor: b.floor ?? "",
-      roomNo: b.allocatedRoom || "",
-      refCode: b.refCode || "",
-      status: "confirmed",
-      bookedAt: b.createdAt || null,
-      approvedAt: b.approvedAt || null,
-      paidAt: b.paidAt || null,
-      notes: b.notes || "",
-      updatedAt: serverTimestamp()
-    }, { merge:true });
-  }
-
   async function adminMarkPaid(id){
     try{
       await updateDoc(doc(db, BOOKINGS_COL, id), { status:"paid", paidAt: serverTimestamp(), updatedAt: serverTimestamp() });
@@ -1249,9 +1257,7 @@ ${booking.email}`,
         await setDoc(doc(db, PUBLIC_COL, b.refCode), { status:"paid", updatedAt: serverTimestamp() }, { merge:true });
       }
 
-      // Add to Residents register
       await upsertResidentFromBooking(id);
-
       showToast("admin","Payment confirmed. Added to Residents register.");
     }catch(e){
       console.error(e);
@@ -1336,6 +1342,8 @@ ${booking.email}`,
 
       const rows = snap.docs.map(d => {
         const r = d.data();
+        const location = `${r.building || "—"} — Floor ${r.floor ?? "—"} — Room ${r.roomNo || "—"}`;
+
         return {
           "Resident ID": r.bookingId || d.id,
           "Full Name": r.fullName || "",
@@ -1345,9 +1353,11 @@ ${booking.email}`,
           "Phone": r.phone || "",
           "Email": r.email || "",
           "School": r.school || "",
+          "Home Address": r.homeAddress || "",
           "Emergency Contact": r.emergencyContact || "",
           "Guardian Phone": r.guardianPhone || "",
           "Room Type": r.roomType || "",
+          "Hostel Location": location,
           "Building": r.building || "",
           "Floor": r.floor ?? "",
           "Room No": r.roomNo || "",
@@ -1460,4 +1470,3 @@ ${booking.email}`,
 </script>
 </body>
 </html>
-
