@@ -6,8 +6,11 @@
   <title>LIN MART EXECUTIVE HOSTEL — Booking • Status • Admin</title>
   <meta name="description" content="LIN MART EXECUTIVE HOSTEL booking and allocation system. Students receive a booking reference code to track status." />
 
-  <!-- EmailJS -->
+  <!-- EmailJS (kept for your existing templates; optional to use) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <!-- Excel Export (SheetJS) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     :root{
@@ -30,6 +33,16 @@
     header{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:8px 0 18px; flex-wrap:wrap;}
     .brand h1{margin:0; font-size:20px; letter-spacing:.3px}
     .brand p{margin:8px 0 0; color:var(--muted); font-size:13px; max-width:860px}
+    .topBadges{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+    .badge{
+      display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line);
+      background:rgba(255,255,255,.04); border-radius:999px; padding:6px 10px;
+      color:var(--muted); font-size:12px;
+    }
+    .badge.good{ border-color:rgba(34,197,94,.30); background:rgba(34,197,94,.10); color:#d7ffe6; }
+    .badge.bad{ border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.10); color:#ffe0e0; }
+    .badge.info{ border-color:rgba(124,92,255,.35); background:rgba(124,92,255,.10); color:#eae5ff; }
+
     .tabs{
       display:flex; gap:8px; padding:6px; border:1px solid var(--line);
       background:var(--panel2); border-radius:999px; box-shadow:var(--shadow); flex-wrap:wrap;
@@ -40,6 +53,7 @@
       text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
     }
     .tabbtn.active{background:linear-gradient(90deg, var(--accent), #4cc3ff); color:#071018;}
+
     .grid{display:grid; grid-template-columns: 1.18fr .82fr; gap:18px; align-items:start;}
     @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
     .card{
@@ -69,6 +83,7 @@
       border-top:1px dashed rgba(255,255,255,.14); padding-top:10px; color:var(--muted); font-size:12px;
     }
     .avail strong{ color:var(--text); }
+
     .toast{
       display:none; margin:14px 18px 0; padding:12px 14px; border-radius:14px;
       border:1px solid var(--line); background:rgba(34,197,94,.12); color:#d7ffe6; font-size:13px; white-space:pre-wrap;
@@ -159,13 +174,18 @@
         Submit your accommodation request online and receive a <strong>Booking Reference Code</strong>.
         Use the reference code to check your status anytime. Allocation details and payment instructions are sent after approval.
       </p>
+
+      <div class="topBadges">
+        <span id="badgeBookings" class="badge info">Loading booking status…</span>
+      </div>
     </div>
 
-    <!-- Tabs are links now (so you can share #admin) -->
     <div class="tabs" role="tablist" aria-label="Switch view">
       <a class="tabbtn" id="tabBooking" href="#booking" role="tab" aria-selected="true">Booking</a>
       <a class="tabbtn" id="tabStatus" href="#status" role="tab" aria-selected="false">Check Status</a>
-      <a class="tabbtn" id="tabAdmin" href="#admin" role="tab" aria-selected="false">Admin</a>
+
+      <!-- OPTION A: ADMIN TAB HIDDEN (admin uses /#admin link) -->
+      <a class="tabbtn" id="tabAdmin" href="#admin" role="tab" aria-selected="false" style="display:none;">Admin</a>
     </div>
   </header>
 
@@ -260,6 +280,29 @@
             </div>
           </div>
 
+          <!-- NEW BIODATA FIELDS -->
+          <div class="row">
+            <div>
+              <label for="studentId">Student ID</label>
+              <input id="studentId" type="text" placeholder="e.g., UG1234567" required />
+            </div>
+            <div>
+              <label for="nationality">Nationality</label>
+              <input id="nationality" type="text" placeholder="e.g., Ghanaian" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="emergencyName">Emergency Contact Name</label>
+              <input id="emergencyName" type="text" placeholder="e.g., John Mensah" required />
+            </div>
+            <div>
+              <label for="guardianPhone">Guardian / Emergency Phone</label>
+              <input id="guardianPhone" type="tel" placeholder="e.g., 020 000 0000" required />
+            </div>
+          </div>
+
           <div class="row">
             <div>
               <label for="moveIn">Preferred move-in date</label>
@@ -290,6 +333,7 @@
           <div class="kv"><span>Price</span><strong id="sumRoomPrice">—</strong></div>
           <div class="kv"><span>Gender</span><strong id="sumGender">—</strong></div>
           <div class="kv"><span>Availability (gender-based)</span><strong id="sumAvail">—</strong></div>
+          <div class="kv"><span>Booking Status</span><strong id="sumBookingOpen">—</strong></div>
         </div>
 
         <div class="note">
@@ -341,7 +385,7 @@
     <div class="card">
       <div class="head">
         <h2>Admin Dashboard</h2>
-        <p>Sign in to review applications, approve bookings, allocate rooms, and manage payments.</p>
+        <p>Open via direct link: <span class="mono">/#admin</span>. Sign in to review applications, approve bookings, confirm payments, and export residents to Excel.</p>
       </div>
 
       <div id="toastAdmin" class="toast" role="status" aria-live="polite"></div>
@@ -367,7 +411,7 @@
 
       <div id="adminPanel" class="hide">
         <div class="adminToolbar">
-          <input id="search" type="search" placeholder="Search name, phone, email, school..." />
+          <input id="search" type="search" placeholder="Search name, phone, email, school, student id..." />
           <select id="filterRoom">
             <option value="">All room types</option>
             <option value="1">1 in a room</option>
@@ -388,6 +432,9 @@
             <option value="rejected">Rejected</option>
           </select>
 
+          <button class="btn-warn" id="toggleBookingsBtn" type="button">Toggle Bookings</button>
+          <button class="btn-primary" id="exportResidentsBtn" type="button">Export Residents (Excel)</button>
+
           <button class="btn-danger" id="clearBtn" type="button">Clear all bookings</button>
           <button class="btn-primary" id="logoutBtn" type="button">Logout</button>
         </div>
@@ -399,6 +446,7 @@
           <span class="pill warn">Waitlist: <strong id="kWaitlist">0</strong></span>
           <span class="pill good">Paid: <strong id="kPaid">0</strong></span>
           <span class="pill bad">Rejected: <strong id="kRejected">0</strong></span>
+          <span class="pill info">Bookings: <strong id="kOpen">—</strong></span>
         </div>
 
         <div class="note" style="padding-top:0;">
@@ -417,7 +465,7 @@
                 <th>Allocation</th>
                 <th>Roommates</th>
                 <th>Reference</th>
-                <th style="min-width:700px;">Actions</th>
+                <th style="min-width:740px;">Actions</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -426,6 +474,7 @@
 
         <div class="note">
           “Approve” allocates a room (if available) and sends the allocation email to the student.
+          “Mark Paid” confirms payment and adds the student to the <strong>Residents Register</strong> (Excel export).
         </div>
       </div>
     </div>
@@ -438,12 +487,28 @@
   // ================== FIREBASE (CDN MODULES) ==================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
-    getFirestore, collection, addDoc, getDoc, setDoc, doc, updateDoc, deleteDoc, getDocs,
-    query, orderBy, onSnapshot, serverTimestamp, runTransaction
+    getFirestore,
+    collection,
+    addDoc,
+    getDoc,
+    setDoc,
+    doc,
+    updateDoc,
+    deleteDoc,
+    getDocs,
+    query,
+    orderBy,
+    onSnapshot,
+    serverTimestamp,
+    runTransaction
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-  from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyD_41JZpf3N-31ygWwy-QB-GATaQ6aKY2g",
@@ -459,20 +524,18 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  // ================== EMAILJS ==================
+  // ================== EMAILJS (optional usage) ==================
   const EMAIL = {
     publicKey: "u7PnlhwIw05D-Rqh9",
     serviceId: "service_agply6t",
     tplBooking: "template_lkwqlmo",
     tplApproved: "template_pp7xixk"
   };
-
-  const emailReady = !!(window.emailjs && EMAIL.publicKey && EMAIL.serviceId);
-  if (emailReady) window.emailjs.init(EMAIL.publicKey);
+  if (window.emailjs && EMAIL.publicKey) window.emailjs.init(EMAIL.publicKey);
 
   async function sendEmail(templateId, params){
     try{
-      if (!emailReady) return;
+      if (!window.emailjs) return;
       await window.emailjs.send(EMAIL.serviceId, templateId, params);
     }catch(e){
       console.error("Email failed:", e);
@@ -485,6 +548,8 @@
   const PUBLIC_COL = "publicStatus";
   const META_COL = "meta";
   const ROOMS_DOC = "roomsState";
+  const APP_DOC = "appState";
+  const RESIDENTS_COL = "residents";
 
   const PRICES = { "1": 14000, "2": 7000, "3": 5500 };
   const BANK = {
@@ -498,9 +563,28 @@
   const SINGLE_BUILDING = "Single Building";
 
   const ROOM_SETUP = {
-    "1": { building: SINGLE_BUILDING, floors:[1,2], roomsPerFloor:{1:["01","02","03","04","05","06"],2:["01","02","03","04","05","06"]}, capacity:1 },
-    "2": { building: MAIN_BUILDING, floors:[1,2,3], roomsPerFloor:{1:["01","02","03","04","05","06","07","08"],2:["01","02","03","04","05","06","07","08"],3:["01","02","03","04","05","06","07","08"]}, capacity:2 },
-    "3": { building: MAIN_BUILDING, floors:[1,2], roomsPerFloor:{1:["09","10","11"],2:["09","10","11"]}, capacity:3 }
+    "1": {
+      building: SINGLE_BUILDING,
+      floors: [1, 2],
+      roomsPerFloor: { 1:["01","02","03","04","05","06"], 2:["01","02","03","04","05","06"] },
+      capacity: 1
+    },
+    "2": {
+      building: MAIN_BUILDING,
+      floors: [1, 2, 3],
+      roomsPerFloor: {
+        1:["01","02","03","04","05","06","07","08"],
+        2:["01","02","03","04","05","06","07","08"],
+        3:["01","02","03","04","05","06","07","08"]
+      },
+      capacity: 2
+    },
+    "3": {
+      building: MAIN_BUILDING,
+      floors: [1, 2],
+      roomsPerFloor: { 1:["09","10","11"], 2:["09","10","11"] },
+      capacity: 3
+    }
   };
 
   // ================== HELPERS ==================
@@ -586,7 +670,48 @@
     return spaces;
   }
 
-  // ================== EMAILS ==================
+  // ================== GLOBAL APP STATE (Bookings Open/Closed) ==================
+  let appState = { bookingsOpen: true };
+  async function ensureAppDoc(){
+    const ref = doc(db, META_COL, APP_DOC);
+    const snap = await getDoc(ref);
+    if (!snap.exists()){
+      await setDoc(ref, { bookingsOpen: true, updatedAt: serverTimestamp() }, { merge:true });
+    }
+  }
+
+  function renderBookingOpenUI(){
+    const open = !!appState.bookingsOpen;
+    $("badgeBookings").textContent = open ? "Bookings Open" : "Bookings Closed";
+    $("badgeBookings").className = "badge " + (open ? "good" : "bad");
+    $("sumBookingOpen").textContent = open ? "OPEN" : "CLOSED";
+    $("submitBtn").disabled = !open;
+    $("submitBtn").textContent = open ? "Submit Booking" : "Bookings Closed";
+    $("kOpen").textContent = open ? "OPEN" : "CLOSED";
+  }
+
+  async function startAppListener(){
+    await ensureAppDoc();
+    const ref = doc(db, META_COL, APP_DOC);
+    onSnapshot(ref, (snap)=>{
+      if (!snap.exists()) return;
+      appState = snap.data() || { bookingsOpen:true };
+      renderBookingOpenUI();
+    });
+  }
+
+  async function toggleBookingsOpen(){
+    try{
+      const ref = doc(db, META_COL, APP_DOC);
+      await setDoc(ref, { bookingsOpen: !appState.bookingsOpen, updatedAt: serverTimestamp() }, { merge:true });
+      showToast("admin", !appState.bookingsOpen ? "Bookings opened." : "Bookings closed.");
+    }catch(e){
+      console.error(e);
+      showToast("admin","Unable to toggle booking status.", "error");
+    }
+  }
+
+  // ================== EMAILS (optional) ==================
   function sendBookingReceivedEmail(b){
     return sendEmail(EMAIL.tplBooking, {
       to_name: b.fullName,
@@ -604,7 +729,6 @@
   function sendApprovedEmail(b){
     const mates = (b.roomType !== "1" && b.roommates?.length) ? b.roommates.join(", ") : "None";
     const alloc = allocationText(b);
-
     return sendEmail(EMAIL.tplApproved, {
       to_name: b.fullName,
       to_email: b.email,
@@ -677,6 +801,7 @@
         allocatedRoom: meta.roomNo,
         floor: meta.floor,
         building: meta.building,
+        approvedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
 
@@ -790,7 +915,10 @@
 
   // ================== BOOKING SUBMIT ==================
   function validateBooking(){
-    const required = ["fullName","phone","email","school","roomType","moveIn","duration","gender"];
+    const required = [
+      "fullName","phone","email","school","roomType","moveIn","duration","gender",
+      "studentId","nationality","emergencyName","guardianPhone"
+    ];
     for (const id of required){
       const el = $(id);
       const val = el.value;
@@ -816,6 +944,10 @@
 
   let submitting = false;
   async function submitBooking(){
+    if (!appState.bookingsOpen){
+      showToast("booking","Bookings are currently CLOSED. Please try later.","error");
+      return;
+    }
     if (submitting) return;
     if (!validateBooking()) return;
     if (!lastRooms){
@@ -830,6 +962,7 @@
     try{
       const refCode = makeRefCode();
       const booking = {
+        // Core
         fullName: $("fullName").value.trim(),
         phone: $("phone").value.trim(),
         email: $("email").value.trim(),
@@ -839,6 +972,14 @@
         duration: Number($("duration").value || 1),
         moveInDate: $("moveIn").value,
         notes: $("notes").value.trim(),
+
+        // New biodata
+        studentId: $("studentId").value.trim(),
+        nationality: $("nationality").value.trim(),
+        emergencyContact: $("emergencyName").value.trim(),
+        guardianPhone: $("guardianPhone").value.trim(),
+
+        // System
         refCode,
         status: "pending",
         allocatedRoomKey: "",
@@ -847,14 +988,21 @@
         building: "",
         roommates: [],
         paidAt: null,
+        approvedAt: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
 
       await addDoc(collection(db, BOOKINGS_COL), booking);
 
-      await setDoc(doc(db, PUBLIC_COL, refCode), { status:"pending", allocation:"", roommates:[], updatedAt: serverTimestamp() });
+      await setDoc(doc(db, PUBLIC_COL, refCode), {
+        status: "pending",
+        allocation: "",
+        roommates: [],
+        updatedAt: serverTimestamp()
+      }, { merge:true });
 
+      // Optional EmailJS booking received
       await sendBookingReceivedEmail(booking);
 
       showToast("booking",
@@ -863,7 +1011,8 @@
 Booking Reference Code: ${refCode}
 
 A confirmation email has been sent to:
-${booking.email}`,"success");
+${booking.email}`,
+"success");
 
       $("bookingForm").reset();
       readSummary();
@@ -872,8 +1021,7 @@ ${booking.email}`,"success");
       showToast("booking","Booking failed. Please try again.", "error");
     }finally{
       submitting = false;
-      $("submitBtn").disabled = false;
-      $("submitBtn").textContent = "Submit Booking";
+      renderBookingOpenUI();
     }
   }
 
@@ -960,6 +1108,7 @@ ${booking.email}`,"success");
     return list.filter(b=>{
       const blob = [
         b.fullName,b.phone,b.email,b.school,b.notes,
+        b.studentId,b.nationality,b.emergencyContact,b.guardianPhone,
         b.roomType,b.gender,b.status,b.allocatedRoom,b.building,(b.floor||""), b.refCode
       ].join(" ").toLowerCase();
 
@@ -977,6 +1126,7 @@ ${booking.email}`,"success");
     $("kWaitlist").textContent = list.filter(b => b.status==="waitlist").length;
     $("kPaid").textContent = list.filter(b => b.status==="paid").length;
     $("kRejected").textContent = list.filter(b => b.status==="rejected").length;
+    renderBookingOpenUI();
   }
 
   function renderAdmin(){
@@ -1005,6 +1155,9 @@ ${booking.email}`,"success");
           <div style="color:var(--muted);">${escapeHtml(b.phone || "")}</div>
           <div style="color:var(--muted);">${escapeHtml(b.email || "")}</div>
           <div style="color:var(--muted);">${escapeHtml(b.school || "")}</div>
+          <div style="color:var(--muted);">Student ID: ${escapeHtml(b.studentId || "—")}</div>
+          <div style="color:var(--muted);">Nationality: ${escapeHtml(b.nationality || "—")}</div>
+          <div style="color:var(--muted);">Emergency: ${escapeHtml(b.emergencyContact || "—")} (${escapeHtml(b.guardianPhone || "—")})</div>
         </td>
         <td>${genderLabel(b.gender)}</td>
         <td>${roomLabel(String(b.roomType||""))}<div style="color:var(--muted); margin-top:4px;">${price}</div></td>
@@ -1033,6 +1186,7 @@ ${booking.email}`,"success");
     return { id: snap.id, ...snap.data() };
   }
 
+  // ================== ADMIN ACTIONS ==================
   async function adminApprove(id){
     try{
       const res = await approveBookingTransaction(id);
@@ -1041,6 +1195,7 @@ ${booking.email}`,"success");
         return;
       }
       showToast("admin","Approved and allocated. Sending allocation email...");
+
       const fresh = await fetchBookingFresh(id);
       if (fresh && fresh.status === "approved" && fresh.allocatedRoomKey){
         await sendApprovedEmail(fresh);
@@ -1054,14 +1209,50 @@ ${booking.email}`,"success");
     }
   }
 
+  async function upsertResidentFromBooking(bookingId){
+    const b = await fetchBookingFresh(bookingId);
+    if (!b) return;
+
+    const toStr = (x)=> (x===null || x===undefined) ? "" : String(x);
+
+    await setDoc(doc(db, RESIDENTS_COL, bookingId), {
+      bookingId: bookingId,
+      fullName: b.fullName || "",
+      gender: b.gender || "",
+      phone: b.phone || "",
+      email: b.email || "",
+      school: b.school || "",
+      studentId: b.studentId || "",
+      nationality: b.nationality || "",
+      emergencyContact: b.emergencyContact || "",
+      guardianPhone: b.guardianPhone || "",
+      roomType: toStr(b.roomType),
+      building: b.building || "",
+      floor: b.floor ?? "",
+      roomNo: b.allocatedRoom || "",
+      refCode: b.refCode || "",
+      status: "confirmed",
+      bookedAt: b.createdAt || null,
+      approvedAt: b.approvedAt || null,
+      paidAt: b.paidAt || null,
+      notes: b.notes || "",
+      updatedAt: serverTimestamp()
+    }, { merge:true });
+  }
+
   async function adminMarkPaid(id){
     try{
       await updateDoc(doc(db, BOOKINGS_COL, id), { status:"paid", paidAt: serverTimestamp(), updatedAt: serverTimestamp() });
+
       const b = cloudBookings.find(x=>x.id===id);
       if (b?.refCode){
         await setDoc(doc(db, PUBLIC_COL, b.refCode), { status:"paid", updatedAt: serverTimestamp() }, { merge:true });
       }
-      showToast("admin","Payment confirmed.");
+
+      // Add to Residents register
+      await upsertResidentFromBooking(id);
+
+      showToast("admin","Payment confirmed. Added to Residents register.");
     }catch(e){
       console.error(e);
       showToast("admin","Unable to mark as paid.", "error");
@@ -1082,10 +1273,12 @@ ${booking.email}`,"success");
     try{
       await releaseBookingTransaction(id);
       await updateDoc(doc(db, BOOKINGS_COL, id), { status:"rejected", updatedAt: serverTimestamp() });
+
       const b = cloudBookings.find(x=>x.id===id);
       if (b?.refCode){
         await setDoc(doc(db, PUBLIC_COL, b.refCode), { status:"rejected", allocation:"", roommates:[], updatedAt: serverTimestamp() }, { merge:true });
       }
+
       showToast("admin","Booking rejected.");
     }catch(e){
       console.error(e);
@@ -1112,25 +1305,77 @@ ${booking.email}`,"success");
   }
 
   async function adminClearAll(){
-    const ok = confirm("Delete ALL bookings and reset availability? This cannot be undone.");
+    const ok = confirm("Delete ALL bookings, public statuses and reset availability? This cannot be undone.");
     if (!ok) return;
 
     try{
       const bsnap = await getDocs(collection(db, BOOKINGS_COL));
-      const deletes = [];
-      bsnap.forEach(d => deletes.push(deleteDoc(doc(db, BOOKINGS_COL, d.id))));
-      await Promise.all(deletes);
+      await Promise.all(bsnap.docs.map(d => deleteDoc(d.ref)));
 
       const psnap = await getDocs(collection(db, PUBLIC_COL));
-      const deletes2 = [];
-      psnap.forEach(d => deletes2.push(deleteDoc(doc(db, PUBLIC_COL, d.id))));
-      await Promise.all(deletes2);
+      await Promise.all(psnap.docs.map(d => deleteDoc(d.ref)));
 
       await setDoc(doc(db, META_COL, ROOMS_DOC), { rooms: defaultRooms(), updatedAt: serverTimestamp() });
+
       showToast("admin","All records cleared and availability reset.");
     }catch(e){
       console.error(e);
-      showToast("admin","Unable to clear records.", "error");
+      showToast("admin","Unable to clear records (check Firestore rules).", "error");
+    }
+  }
+
+  // ================== EXCEL EXPORT (Residents) ==================
+  async function exportResidentsToExcel(){
+    try{
+      if (!window.XLSX){
+        showToast("admin","Excel library not loaded.", "error");
+        return;
+      }
+      const snap = await getDocs(collection(db, RESIDENTS_COL));
+      const toDate = (x) => x?.toDate ? x.toDate().toLocaleString() : (x ? String(x) : "");
+
+      const rows = snap.docs.map(d => {
+        const r = d.data();
+        return {
+          "Resident ID": r.bookingId || d.id,
+          "Full Name": r.fullName || "",
+          "Student ID": r.studentId || "",
+          "Gender": r.gender || "",
+          "Nationality": r.nationality || "",
+          "Phone": r.phone || "",
+          "Email": r.email || "",
+          "School": r.school || "",
+          "Emergency Contact": r.emergencyContact || "",
+          "Guardian Phone": r.guardianPhone || "",
+          "Room Type": r.roomType || "",
+          "Building": r.building || "",
+          "Floor": r.floor ?? "",
+          "Room No": r.roomNo || "",
+          "Booking Reference": r.refCode || "",
+          "Status": r.status || "confirmed",
+          "Booked At": toDate(r.bookedAt),
+          "Approved At": toDate(r.approvedAt),
+          "Paid / Confirmed At": toDate(r.paidAt),
+          "Notes": r.notes || ""
+        };
+      });
+
+      if (!rows.length){
+        showToast("admin","No confirmed residents yet.", "error");
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Residents");
+
+      const filename = `LIN_MART_Residents_${new Date().toISOString().slice(0,10)}.xlsx`;
+      XLSX.writeFile(wb, filename);
+
+      showToast("admin","Residents exported to Excel.");
+    }catch(e){
+      console.error(e);
+      showToast("admin","Export failed. Check console.", "error");
     }
   }
 
@@ -1159,11 +1404,11 @@ ${booking.email}`,"success");
     if (h === "status") return setView("status");
     return setView("booking");
   }
-
   window.addEventListener("hashchange", applyRouteFromHash);
 
   // ================== EVENTS ==================
   ["roomType","duration","gender"].forEach(id => $(id).addEventListener("change", readSummary));
+
   $("submitBtn").addEventListener("click", submitBooking);
   $("resetBtn").addEventListener("click", resetBooking);
   $("checkBtn").addEventListener("click", checkStatus);
@@ -1171,6 +1416,8 @@ ${booking.email}`,"success");
   $("loginBtn").addEventListener("click", loginAdmin);
   $("logoutBtn").addEventListener("click", logoutAdmin);
   $("clearBtn").addEventListener("click", adminClearAll);
+  $("toggleBookingsBtn").addEventListener("click", toggleBookingsOpen);
+  $("exportResidentsBtn").addEventListener("click", exportResidentsToExcel);
 
   ["search","filterRoom","filterGender","filterStatus"].forEach(id => {
     $(id).addEventListener("input", renderAdmin);
@@ -1197,6 +1444,7 @@ ${booking.email}`,"success");
     $("moveIn").min = todayISO();
     readSummary();
     startRoomsListener();
+    startAppListener();
     applyRouteFromHash();
 
     onAuthStateChanged(auth, (user)=>{
