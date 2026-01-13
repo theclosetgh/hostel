@@ -37,6 +37,7 @@
     .tabbtn{
       border:none; cursor:pointer; padding:10px 12px; border-radius:999px;
       background:transparent; color:var(--muted); font-weight:900; font-size:13px; letter-spacing:.2px;
+      text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
     }
     .tabbtn.active{background:linear-gradient(90deg, var(--accent), #4cc3ff); color:#071018;}
     .grid{display:grid; grid-template-columns: 1.18fr .82fr; gap:18px; align-items:start;}
@@ -160,11 +161,11 @@
       </p>
     </div>
 
+    <!-- Tabs are links now (so you can share #admin) -->
     <div class="tabs" role="tablist" aria-label="Switch view">
-      <button class="tabbtn active" id="tabBooking" type="button" role="tab" aria-selected="true">Booking</button>
-      <button class="tabbtn" id="tabStatus" type="button" role="tab" aria-selected="false">Check Status</button>
-      <!-- Admin tab hidden until authenticated -->
-      <button class="tabbtn hide" id="tabAdmin" type="button" role="tab" aria-selected="false">Admin</button>
+      <a class="tabbtn" id="tabBooking" href="#booking" role="tab" aria-selected="true">Booking</a>
+      <a class="tabbtn" id="tabStatus" href="#status" role="tab" aria-selected="false">Check Status</a>
+      <a class="tabbtn" id="tabAdmin" href="#admin" role="tab" aria-selected="false">Admin</a>
     </div>
   </header>
 
@@ -437,28 +438,12 @@
   // ================== FIREBASE (CDN MODULES) ==================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
-    getFirestore,
-    collection,
-    addDoc,
-    getDoc,
-    setDoc,
-    doc,
-    updateDoc,
-    deleteDoc,
-    getDocs,
-    query,
-    orderBy,
-    onSnapshot,
-    serverTimestamp,
-    runTransaction
+    getFirestore, collection, addDoc, getDoc, setDoc, doc, updateDoc, deleteDoc, getDocs,
+    query, orderBy, onSnapshot, serverTimestamp, runTransaction
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  import {
-    getAuth,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyD_41JZpf3N-31ygWwy-QB-GATaQ6aKY2g",
@@ -474,24 +459,20 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  // ================== EMAILJS (YOUR REAL IDs) ==================
+  // ================== EMAILJS ==================
   const EMAIL = {
     publicKey: "u7PnlhwIw05D-Rqh9",
     serviceId: "service_agply6t",
-    tplBooking: "template_lkwqlmo",   // booking received
-    tplApproved: "template_pp7xixk"   // approved/allocation
+    tplBooking: "template_lkwqlmo",
+    tplApproved: "template_pp7xixk"
   };
 
-  // EmailJS init (guarded)
   const emailReady = !!(window.emailjs && EMAIL.publicKey && EMAIL.serviceId);
   if (emailReady) window.emailjs.init(EMAIL.publicKey);
 
   async function sendEmail(templateId, params){
     try{
-      if (!emailReady) {
-        console.warn("EmailJS not ready. Check script load + IDs.");
-        return;
-      }
+      if (!emailReady) return;
       await window.emailjs.send(EMAIL.serviceId, templateId, params);
     }catch(e){
       console.error("Email failed:", e);
@@ -517,28 +498,9 @@
   const SINGLE_BUILDING = "Single Building";
 
   const ROOM_SETUP = {
-    "1": {
-      building: SINGLE_BUILDING,
-      floors: [1, 2],
-      roomsPerFloor: { 1:["01","02","03","04","05","06"], 2:["01","02","03","04","05","06"] },
-      capacity: 1
-    },
-    "2": {
-      building: MAIN_BUILDING,
-      floors: [1, 2, 3],
-      roomsPerFloor: {
-        1:["01","02","03","04","05","06","07","08"],
-        2:["01","02","03","04","05","06","07","08"],
-        3:["01","02","03","04","05","06","07","08"]
-      },
-      capacity: 2
-    },
-    "3": {
-      building: MAIN_BUILDING,
-      floors: [1, 2],
-      roomsPerFloor: { 1:["09","10","11"], 2:["09","10","11"] },
-      capacity: 3
-    }
+    "1": { building: SINGLE_BUILDING, floors:[1,2], roomsPerFloor:{1:["01","02","03","04","05","06"],2:["01","02","03","04","05","06"]}, capacity:1 },
+    "2": { building: MAIN_BUILDING, floors:[1,2,3], roomsPerFloor:{1:["01","02","03","04","05","06","07","08"],2:["01","02","03","04","05","06","07","08"],3:["01","02","03","04","05","06","07","08"]}, capacity:2 },
+    "3": { building: MAIN_BUILDING, floors:[1,2], roomsPerFloor:{1:["09","10","11"],2:["09","10","11"]}, capacity:3 }
   };
 
   // ================== HELPERS ==================
@@ -571,21 +533,6 @@
     showToast._t = setTimeout(()=>{ t.style.display="none"; }, 7500);
   }
 
-  function normalizeGHForWa(phoneRaw){
-    let p = String(phoneRaw||"").trim().replace(/[^\d+]/g,"");
-    if (!p) return "";
-    if (p.startsWith("+")) p = p.slice(1);
-    if (/^0\d{9}$/.test(p)) return "233"+p.slice(1);
-    if (/^\d{9}$/.test(p)) return "233"+p;
-    if (/^233\d{9}$/.test(p)) return p;
-    return p.replace(/\D/g,"");
-  }
-  function waLink(phoneRaw, message){
-    const wa = normalizeGHForWa(phoneRaw);
-    if (!wa) return "";
-    return `https://wa.me/${wa}?text=${encodeURIComponent(message||"")}`;
-  }
-
   function makeRefCode(){
     const part = Math.random().toString(36).slice(2, 8).toUpperCase();
     const tail = Date.now().toString().slice(-4);
@@ -597,20 +544,15 @@
     return `${b.building} — Floor ${b.floor} — Room ${b.allocatedRoom}`;
   }
 
-  // ================== ROOMS STATE (CLOUD) ==================
+  // ================== ROOMS STATE ==================
   function defaultRooms(){
     const rooms = { "1": {}, "2": {}, "3": {} };
     for (const type of ["1","2","3"]){
       const cfg = ROOM_SETUP[type];
       for (const floor of cfg.floors){
-        const list = cfg.roomsPerFloor[floor] || [];
-        for (const no of list){
+        for (const no of (cfg.roomsPerFloor[floor] || [])){
           const key = `${cfg.building}|F${floor}|R${no}`;
-          rooms[type][key] = {
-            gender: null,
-            occupants: [],
-            meta: { building: cfg.building, floor, roomNo: no, capacity: cfg.capacity }
-          };
+          rooms[type][key] = { gender:null, occupants:[], meta:{ building:cfg.building, floor, roomNo:no, capacity:cfg.capacity } };
         }
       }
     }
@@ -646,7 +588,6 @@
 
   // ================== EMAILS ==================
   function sendBookingReceivedEmail(b){
-    // Ensure your EmailJS template uses these variable names.
     return sendEmail(EMAIL.tplBooking, {
       to_name: b.fullName,
       to_email: b.email,
@@ -719,12 +660,7 @@
       if (!roomKey){
         tx.update(bookingRef, { status:"waitlist", updatedAt: serverTimestamp() });
         if (b.refCode){
-          tx.set(doc(db, PUBLIC_COL, b.refCode), {
-            status: "waitlist",
-            allocation: "",
-            roommates: [],
-            updatedAt: serverTimestamp()
-          }, { merge:true });
+          tx.set(doc(db, PUBLIC_COL, b.refCode), { status:"waitlist", allocation:"", roommates:[], updatedAt: serverTimestamp() }, { merge:true });
         }
         return { ok:false, reason:"no_space" };
       }
@@ -749,12 +685,7 @@
 
       if (b.refCode){
         const allocTxt = `${meta.building} — Floor ${meta.floor} — Room ${meta.roomNo}`;
-        tx.set(doc(db, PUBLIC_COL, b.refCode), {
-          status: "approved",
-          allocation: allocTxt,
-          roommates: [],
-          updatedAt: serverTimestamp()
-        }, { merge:true });
+        tx.set(doc(db, PUBLIC_COL, b.refCode), { status:"approved", allocation:allocTxt, roommates:[], updatedAt: serverTimestamp() }, { merge:true });
       }
 
       return { ok:true };
@@ -793,12 +724,7 @@
       });
 
       if (b.refCode){
-        tx.set(doc(db, PUBLIC_COL, b.refCode), {
-          status:"pending",
-          allocation:"",
-          roommates: [],
-          updatedAt: serverTimestamp()
-        }, { merge:true });
+        tx.set(doc(db, PUBLIC_COL, b.refCode), { status:"pending", allocation:"", roommates:[], updatedAt: serverTimestamp() }, { merge:true });
       }
     });
   }
@@ -826,7 +752,7 @@
       renderAdmin();
     }, (err)=>{
       console.error(err);
-      showToast("admin","Access denied. Confirm admin sign-in and Firestore rules.", "error");
+      showToast("admin","Access denied. Confirm admin sign-in + Firestore rules.", "error");
     });
   }
 
@@ -889,7 +815,6 @@
   }
 
   let submitting = false;
-
   async function submitBooking(){
     if (submitting) return;
     if (!validateBooking()) return;
@@ -928,12 +853,7 @@
 
       await addDoc(collection(db, BOOKINGS_COL), booking);
 
-      await setDoc(doc(db, PUBLIC_COL, refCode), {
-        status: "pending",
-        allocation: "",
-        roommates: [],
-        updatedAt: serverTimestamp()
-      });
+      await setDoc(doc(db, PUBLIC_COL, refCode), { status:"pending", allocation:"", roommates:[], updatedAt: serverTimestamp() });
 
       await sendBookingReceivedEmail(booking);
 
@@ -964,9 +884,7 @@ ${booking.email}`,"success");
   }
 
   // ================== STATUS CHECK ==================
-  function normalizeRef(code){
-    return String(code||"").trim().toUpperCase();
-  }
+  function normalizeRef(code){ return String(code||"").trim().toUpperCase(); }
 
   async function checkStatus(){
     const code = normalizeRef($("statusCode").value);
@@ -974,7 +892,6 @@ ${booking.email}`,"success");
       showToast("status","Enter your booking reference code.","error");
       return;
     }
-
     try{
       const snap = await getDoc(doc(db, PUBLIC_COL, code));
       if (!snap.exists()){
@@ -985,13 +902,11 @@ ${booking.email}`,"success");
         $("stUpdated").textContent = "—";
         return;
       }
-
       const d = snap.data();
       $("stStatus").textContent = (d.status || "—").toUpperCase();
       $("stAlloc").textContent = d.allocation ? d.allocation : "—";
       $("stMates").textContent = (d.roommates && d.roommates.length) ? d.roommates.join(", ") : "—";
       $("stUpdated").textContent = fmtDateTime(d.updatedAt);
-
       showToast("status","Status loaded.");
     }catch(e){
       console.error(e);
@@ -1003,15 +918,7 @@ ${booking.email}`,"success");
   function setAdminAuthed(isAuthed){
     $("adminLogin").classList.toggle("hide", isAuthed);
     $("adminPanel").classList.toggle("hide", !isAuthed);
-
-    // hide/show admin tab (professional look)
-    $("tabAdmin").classList.toggle("hide", !isAuthed);
-
-    if (!isAuthed) {
-      stopBookingsListener();
-      // if user is not admin, force away from admin view
-      if (!$("viewAdmin").classList.contains("hide")) setView("booking");
-    }
+    if (!isAuthed) stopBookingsListener();
   }
 
   async function loginAdmin(){
@@ -1020,10 +927,9 @@ ${booking.email}`,"success");
     try{
       await signInWithEmailAndPassword(auth, email, pass);
       showToast("admin","Signed in successfully.");
-      setView("admin");
     }catch(e){
       console.error(e);
-      showToast("admin","Sign-in failed. Please check your details.","error");
+      showToast("admin","Sign-in failed. Check Email/Password auth enabled + user created.", "error");
     }
   }
 
@@ -1091,21 +997,6 @@ ${booking.email}`,"success");
       const alloc = allocationText(b);
       const mates = (b.roommates && b.roommates.length) ? b.roommates.join(", ") : "—";
 
-      const msg =
-`Hello ${b.fullName}, ${HOSTEL_NAME} here.
-
-Reference: ${b.refCode || "—"}
-Room Type: ${roomLabel(String(b.roomType))} (${price})
-Status: ${(b.status||"pending").toUpperCase()}
-Allocation: ${alloc}
-
-Bank payment (after approval):
-${BANK.accountName}
-${BANK.accountNumber}
-${BANK.bank} — ${BANK.branch}`.trim();
-
-      const wlink = waLink(b.phone, msg);
-
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td style="color:var(--muted);">${fmtDateTime(b.createdAt)}</td>
@@ -1129,7 +1020,6 @@ ${BANK.bank} — ${BANK.branch}`.trim();
             <button class="btn-warn" data-act="reject" data-id="${escapeHtml(b.id)}" type="button">Reject</button>
             <button class="btn-primary" data-act="email1" data-id="${escapeHtml(b.id)}" type="button">Resend Confirmation</button>
             <button class="btn-primary" data-act="email2" data-id="${escapeHtml(b.id)}" type="button">Resend Allocation</button>
-            <button class="btn-primary" data-act="wa" data-id="${escapeHtml(b.id)}" type="button" ${wlink ? "" : "disabled"}>WhatsApp</button>
           </div>
         </td>
       `;
@@ -1137,7 +1027,6 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     }
   }
 
-  // ================== ADMIN ACTIONS ==================
   async function fetchBookingFresh(id){
     const snap = await getDoc(doc(db, BOOKINGS_COL, id));
     if (!snap.exists()) return null;
@@ -1147,15 +1036,11 @@ ${BANK.bank} — ${BANK.branch}`.trim();
   async function adminApprove(id){
     try{
       const res = await approveBookingTransaction(id);
-
       if (!res?.ok){
-        showToast("admin","No room available at the moment. Applicant moved to the waitlist.", "error");
+        showToast("admin","No room available. Applicant moved to waitlist.", "error");
         return;
       }
-
       showToast("admin","Approved and allocated. Sending allocation email...");
-
-      // Fetch fresh booking from Firestore (solves timing issues with onSnapshot)
       const fresh = await fetchBookingFresh(id);
       if (fresh && fresh.status === "approved" && fresh.allocatedRoomKey){
         await sendApprovedEmail(fresh);
@@ -1163,7 +1048,6 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       } else {
         showToast("admin","Approved, but allocation details not found yet.", "error");
       }
-
     }catch(e){
       console.error(e);
       showToast("admin","Approval failed. Please try again.", "error");
@@ -1198,12 +1082,10 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     try{
       await releaseBookingTransaction(id);
       await updateDoc(doc(db, BOOKINGS_COL, id), { status:"rejected", updatedAt: serverTimestamp() });
-
       const b = cloudBookings.find(x=>x.id===id);
       if (b?.refCode){
         await setDoc(doc(db, PUBLIC_COL, b.refCode), { status:"rejected", allocation:"", roommates:[], updatedAt: serverTimestamp() }, { merge:true });
       }
-
       showToast("admin","Booking rejected.");
     }catch(e){
       console.error(e);
@@ -1222,7 +1104,7 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     const b = await fetchBookingFresh(id);
     if (!b) return;
     if (b.status !== "approved" || !b.allocatedRoomKey){
-      showToast("admin","This booking has not been approved/allocated yet.", "error");
+      showToast("admin","Not approved/allocated yet.", "error");
       return;
     }
     await sendApprovedEmail(b);
@@ -1245,7 +1127,6 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       await Promise.all(deletes2);
 
       await setDoc(doc(db, META_COL, ROOMS_DOC), { rooms: defaultRooms(), updatedAt: serverTimestamp() });
-
       showToast("admin","All records cleared and availability reset.");
     }catch(e){
       console.error(e);
@@ -1253,7 +1134,7 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     }
   }
 
-  // ================== VIEW SWITCH ==================
+  // ================== VIEW + ROUTING ==================
   function setView(which){
     const isBooking = which === "booking";
     const isStatus = which === "status";
@@ -1272,15 +1153,19 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     $("tabAdmin").setAttribute("aria-selected", isAdmin ? "true" : "false");
   }
 
-  // ================== EVENTS ==================
-  $("tabBooking").addEventListener("click", ()=>setView("booking"));
-  $("tabStatus").addEventListener("click", ()=>setView("status"));
-  $("tabAdmin").addEventListener("click", ()=>setView("admin"));
+  function applyRouteFromHash(){
+    const h = (location.hash || "#booking").replace("#","").toLowerCase();
+    if (h === "admin") return setView("admin");
+    if (h === "status") return setView("status");
+    return setView("booking");
+  }
 
+  window.addEventListener("hashchange", applyRouteFromHash);
+
+  // ================== EVENTS ==================
   ["roomType","duration","gender"].forEach(id => $(id).addEventListener("change", readSummary));
   $("submitBtn").addEventListener("click", submitBooking);
   $("resetBtn").addEventListener("click", resetBooking);
-
   $("checkBtn").addEventListener("click", checkStatus);
 
   $("loginBtn").addEventListener("click", loginAdmin);
@@ -1304,31 +1189,6 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     if (act === "reject") return adminReject(id);
     if (act === "email1") return resendEmail1(id);
     if (act === "email2") return resendEmail2(id);
-
-    if (act === "wa"){
-      const b = cloudBookings.find(x=>x.id===id);
-      if (!b) return;
-
-      const price = formatGHS(PRICES[String(b.roomType)] || 0);
-      const alloc = allocationText(b);
-
-      const msg =
-`Hello ${b.fullName}, ${HOSTEL_NAME} here.
-
-Reference: ${b.refCode || "—"}
-Room Type: ${roomLabel(String(b.roomType))} (${price})
-Status: ${(b.status||"pending").toUpperCase()}
-Allocation: ${alloc}
-
-Bank payment:
-${BANK.accountName}
-${BANK.accountNumber}
-${BANK.bank} — ${BANK.branch}`.trim();
-
-      const link = waLink(b.phone, msg);
-      if (!link) return showToast("admin","Phone number invalid for WhatsApp.", "error");
-      window.open(link, "_blank", "noopener,noreferrer");
-    }
   });
 
   // ================== INIT ==================
@@ -1337,6 +1197,7 @@ ${BANK.bank} — ${BANK.branch}`.trim();
     $("moveIn").min = todayISO();
     readSummary();
     startRoomsListener();
+    applyRouteFromHash();
 
     onAuthStateChanged(auth, (user)=>{
       if (user){
