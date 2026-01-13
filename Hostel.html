@@ -163,7 +163,8 @@
     <div class="tabs" role="tablist" aria-label="Switch view">
       <button class="tabbtn active" id="tabBooking" type="button" role="tab" aria-selected="true">Booking</button>
       <button class="tabbtn" id="tabStatus" type="button" role="tab" aria-selected="false">Check Status</button>
-      <button class="tabbtn" id="tabAdmin" type="button" role="tab" aria-selected="false">Admin</button>
+      <!-- Admin tab hidden until authenticated -->
+      <button class="tabbtn hide" id="tabAdmin" type="button" role="tab" aria-selected="false">Admin</button>
     </div>
   </header>
 
@@ -481,11 +482,16 @@
     tplApproved: "template_pp7xixk"   // approved/allocation
   };
 
-  if (window.emailjs && EMAIL.publicKey) window.emailjs.init(EMAIL.publicKey);
+  // EmailJS init (guarded)
+  const emailReady = !!(window.emailjs && EMAIL.publicKey && EMAIL.serviceId);
+  if (emailReady) window.emailjs.init(EMAIL.publicKey);
 
   async function sendEmail(templateId, params){
     try{
-      if (!window.emailjs) return;
+      if (!emailReady) {
+        console.warn("EmailJS not ready. Check script load + IDs.");
+        return;
+      }
       await window.emailjs.send(EMAIL.serviceId, templateId, params);
     }catch(e){
       console.error("Email failed:", e);
@@ -640,6 +646,7 @@
 
   // ================== EMAILS ==================
   function sendBookingReceivedEmail(b){
+    // Ensure your EmailJS template uses these variable names.
     return sendEmail(EMAIL.tplBooking, {
       to_name: b.fullName,
       to_email: b.email,
@@ -819,7 +826,7 @@
       renderAdmin();
     }, (err)=>{
       console.error(err);
-      showToast("admin","Access denied. Please confirm admin sign-in.", "error");
+      showToast("admin","Access denied. Confirm admin sign-in and Firestore rules.", "error");
     });
   }
 
@@ -881,58 +888,73 @@
     return true;
   }
 
+  let submitting = false;
+
   async function submitBooking(){
+    if (submitting) return;
     if (!validateBooking()) return;
     if (!lastRooms){
       showToast("booking","Connecting... try again in a moment.","error");
       return;
     }
 
-    const refCode = makeRefCode();
-    const booking = {
-      fullName: $("fullName").value.trim(),
-      phone: $("phone").value.trim(),
-      email: $("email").value.trim(),
-      school: $("school").value.trim(),
-      gender: $("gender").value,
-      roomType: $("roomType").value,
-      duration: Number($("duration").value || 1),
-      moveInDate: $("moveIn").value,
-      notes: $("notes").value.trim(),
-      refCode,
-      status: "pending",
-      allocatedRoomKey: "",
-      allocatedRoom: "",
-      floor: null,
-      building: "",
-      roommates: [],
-      paidAt: null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    };
+    submitting = true;
+    $("submitBtn").disabled = true;
+    $("submitBtn").textContent = "Submitting...";
 
-    await addDoc(collection(db, BOOKINGS_COL), booking);
+    try{
+      const refCode = makeRefCode();
+      const booking = {
+        fullName: $("fullName").value.trim(),
+        phone: $("phone").value.trim(),
+        email: $("email").value.trim(),
+        school: $("school").value.trim(),
+        gender: $("gender").value,
+        roomType: $("roomType").value,
+        duration: Number($("duration").value || 1),
+        moveInDate: $("moveIn").value,
+        notes: $("notes").value.trim(),
+        refCode,
+        status: "pending",
+        allocatedRoomKey: "",
+        allocatedRoom: "",
+        floor: null,
+        building: "",
+        roommates: [],
+        paidAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
 
-    await setDoc(doc(db, PUBLIC_COL, refCode), {
-      status: "pending",
-      allocation: "",
-      roommates: [],
-      updatedAt: serverTimestamp()
-    });
+      await addDoc(collection(db, BOOKINGS_COL), booking);
 
-    await sendBookingReceivedEmail(booking);
+      await setDoc(doc(db, PUBLIC_COL, refCode), {
+        status: "pending",
+        allocation: "",
+        roommates: [],
+        updatedAt: serverTimestamp()
+      });
 
-    showToast("booking",
+      await sendBookingReceivedEmail(booking);
+
+      showToast("booking",
 `Booking submitted successfully.
 
 Booking Reference Code: ${refCode}
 
 A confirmation email has been sent to:
-${booking.email}`,
-"success");
+${booking.email}`,"success");
 
-    $("bookingForm").reset();
-    readSummary();
+      $("bookingForm").reset();
+      readSummary();
+    }catch(e){
+      console.error(e);
+      showToast("booking","Booking failed. Please try again.", "error");
+    }finally{
+      submitting = false;
+      $("submitBtn").disabled = false;
+      $("submitBtn").textContent = "Submit Booking";
+    }
   }
 
   function resetBooking(){
@@ -981,7 +1003,15 @@ ${booking.email}`,
   function setAdminAuthed(isAuthed){
     $("adminLogin").classList.toggle("hide", isAuthed);
     $("adminPanel").classList.toggle("hide", !isAuthed);
-    if (!isAuthed) stopBookingsListener();
+
+    // hide/show admin tab (professional look)
+    $("tabAdmin").classList.toggle("hide", !isAuthed);
+
+    if (!isAuthed) {
+      stopBookingsListener();
+      // if user is not admin, force away from admin view
+      if (!$("viewAdmin").classList.contains("hide")) setView("booking");
+    }
   }
 
   async function loginAdmin(){
@@ -990,7 +1020,9 @@ ${booking.email}`,
     try{
       await signInWithEmailAndPassword(auth, email, pass);
       showToast("admin","Signed in successfully.");
+      setView("admin");
     }catch(e){
+      console.error(e);
       showToast("admin","Sign-in failed. Please check your details.","error");
     }
   }
@@ -1106,6 +1138,12 @@ ${BANK.bank} — ${BANK.branch}`.trim();
   }
 
   // ================== ADMIN ACTIONS ==================
+  async function fetchBookingFresh(id){
+    const snap = await getDoc(doc(db, BOOKINGS_COL, id));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() };
+  }
+
   async function adminApprove(id){
     try{
       const res = await approveBookingTransaction(id);
@@ -1117,15 +1155,14 @@ ${BANK.bank} — ${BANK.branch}`.trim();
 
       showToast("admin","Approved and allocated. Sending allocation email...");
 
-      setTimeout(async ()=>{
-        const latest = cloudBookings.find(x=>x.id===id);
-        if (latest && latest.status === "approved" && latest.allocatedRoomKey){
-          await sendApprovedEmail(latest);
-          showToast("admin","Allocation email sent.");
-        } else {
-          showToast("admin","Approved, but allocation email could not be sent.", "error");
-        }
-      }, 1200);
+      // Fetch fresh booking from Firestore (solves timing issues with onSnapshot)
+      const fresh = await fetchBookingFresh(id);
+      if (fresh && fresh.status === "approved" && fresh.allocatedRoomKey){
+        await sendApprovedEmail(fresh);
+        showToast("admin","Allocation email sent.");
+      } else {
+        showToast("admin","Approved, but allocation details not found yet.", "error");
+      }
 
     }catch(e){
       console.error(e);
@@ -1142,6 +1179,7 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       }
       showToast("admin","Payment confirmed.");
     }catch(e){
+      console.error(e);
       showToast("admin","Unable to mark as paid.", "error");
     }
   }
@@ -1151,6 +1189,7 @@ ${BANK.bank} — ${BANK.branch}`.trim();
       await releaseBookingTransaction(id);
       showToast("admin","Allocation released and moved back to pending.");
     }catch(e){
+      console.error(e);
       showToast("admin","Unable to release booking.", "error");
     }
   }
@@ -1167,19 +1206,20 @@ ${BANK.bank} — ${BANK.branch}`.trim();
 
       showToast("admin","Booking rejected.");
     }catch(e){
+      console.error(e);
       showToast("admin","Unable to reject booking.", "error");
     }
   }
 
   async function resendEmail1(id){
-    const b = cloudBookings.find(x=>x.id===id);
+    const b = await fetchBookingFresh(id);
     if (!b) return;
     await sendBookingReceivedEmail(b);
     showToast("admin","Confirmation email resent.");
   }
 
   async function resendEmail2(id){
-    const b = cloudBookings.find(x=>x.id===id);
+    const b = await fetchBookingFresh(id);
     if (!b) return;
     if (b.status !== "approved" || !b.allocatedRoomKey){
       showToast("admin","This booking has not been approved/allocated yet.", "error");
