@@ -608,6 +608,12 @@
   const formatGHS = (n)=> "GHS " + Number(n).toLocaleString("en-GH");
   const roomLabel = (v)=> v==="1"?"1 in a room":v==="2"?"2 in a room":v==="3"?"3 in a room":"—";
   const genderLabel = (g)=> g==="female"?"Female":g==="male"?"Male":"—";
+  function availabilityLabel(spaces){
+  if (spaces <= 0) return "Full";
+  if (spaces <= 5) return "Limited";
+  return "Available";
+}
+
 
   const todayISO = ()=>{
     const d = new Date(); d.setHours(0,0,0,0);
@@ -874,22 +880,20 @@
   let cloudBookings = [];
   let unsubscribeBookings = null;
 
-  async function startRoomsListener(){
-    await ensureRoomsDoc();
-    const ref = doc(db, META_COL, ROOMS_DOC);
-    onSnapshot(ref, (snap)=>{
-      if (!snap.exists()) return;
-      lastRooms = snap.data().rooms || defaultRooms();
-      function availabilityLabel(spaces){
-  if (spaces <= 0) return "Full";
-  if (spaces <= 5) return "Limited";
-  return "Available";
+async function startRoomsListener(){
+  await ensureRoomsDoc();
+  const ref = doc(db, META_COL, ROOMS_DOC);
+
+  onSnapshot(ref, (snap)=>{
+    if (!snap.exists()) return;
+
+    lastRooms = snap.data().rooms || defaultRooms();
+
+    refreshAvailabilityUI();
+    readSummary();
+  });
 }
 
-      refreshAvailabilityUI();
-      readSummary();
-    });
-  }
 
   function startBookingsListenerForAdmin(){
     const q = query(collection(db, BOOKINGS_COL), orderBy("createdAt","desc"));
@@ -1498,4 +1502,5 @@ ${booking.email}`,
 </script>
 </body>
 </html>
+
 
