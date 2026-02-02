@@ -201,19 +201,31 @@
             <div class="tag">1 in a room</div>
             <div class="price">GHS 14,000</div>
             <div class="sub">Single Building • 2 floors • 6 rooms each floor (12 rooms total)</div>
-            <div class="avail"><span>Available spaces</span><strong id="av1">—</strong></div>
+            <div class="avail">
+  <span>Availability</span>
+  <strong id="av1">—</strong>
+</div>
+
           </div>
           <div class="room">
             <div class="tag">2 in a room</div>
             <div class="price">GHS 7,000</div>
             <div class="sub">Main Building • 3 floors • 8 rooms each floor (24 rooms total)</div>
-            <div class="avail"><span>Available spaces</span><strong id="av2">—</strong></div>
+            <div class="avail">
+  <span>Availability</span>
+  <strong id="av2">—</strong>
+</div>
+
           </div>
           <div class="room">
             <div class="tag">3 in a room</div>
             <div class="price">GHS 5,500</div>
             <div class="sub">Main Building • Floors 1–2 • Rooms 09–11 (6 rooms total)</div>
-            <div class="avail"><span>Available spaces</span><strong id="av3">—</strong></div>
+            <div class="avail">
+  <span>Availability</span>
+  <strong id="av3">—</strong>
+</div>
+
           </div>
         </div>
 
@@ -868,6 +880,12 @@
     onSnapshot(ref, (snap)=>{
       if (!snap.exists()) return;
       lastRooms = snap.data().rooms || defaultRooms();
+      function availabilityLabel(spaces){
+  if (spaces <= 0) return "Full";
+  if (spaces <= 5) return "Limited";
+  return "Available";
+}
+
       refreshAvailabilityUI();
       readSummary();
     });
@@ -893,14 +911,23 @@
 
   // ================== UI ==================
   function refreshAvailabilityUI(){
-    if (!lastRooms) return;
-    $("av1").textContent = availableSpacesAll(lastRooms, "1");
-    $("av2").textContent = availableSpacesAll(lastRooms, "2");
-    $("av3").textContent = availableSpacesAll(lastRooms, "3");
-    $("a1Admin").textContent = availableSpacesAll(lastRooms, "1");
-    $("a2Admin").textContent = availableSpacesAll(lastRooms, "2");
-    $("a3Admin").textContent = availableSpacesAll(lastRooms, "3");
-  }
+  if (!lastRooms) return;
+
+  const s1 = availableSpacesAll(lastRooms, "1");
+  const s2 = availableSpacesAll(lastRooms, "2");
+  const s3 = availableSpacesAll(lastRooms, "3");
+
+  // STUDENT VIEW — no numbers
+  $("av1").textContent = availabilityLabel(s1);
+  $("av2").textContent = availabilityLabel(s2);
+  $("av3").textContent = availabilityLabel(s3);
+
+  // ADMIN VIEW — exact numbers
+  $("a1Admin").textContent = s1;
+  $("a2Admin").textContent = s2;
+  $("a3Admin").textContent = s3;
+}
+
 
   function readSummary(){
     const type = $("roomType").value;
@@ -913,7 +940,8 @@
       return;
     }
     const spaces = availableSpacesGender(lastRooms, type, gender);
-    $("sumAvail").textContent = spaces > 0 ? `Available (${spaces} space${spaces===1?"":"s"})` : "Full (you may be waitlisted)";
+$("sumAvail").textContent = availabilityLabel(spaces);
+
   }
 
   // ================== BOOKING SUBMIT ==================
@@ -1470,3 +1498,4 @@ ${booking.email}`,
 </script>
 </body>
 </html>
+
