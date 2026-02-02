@@ -1039,7 +1039,7 @@ $("sumAvail").textContent = availabilityLabel(spaces);
         updatedAt: serverTimestamp()
       }, { merge:true });
 
-      // await sendBookingReceivedEmail(booking);
+      await sendBookingReceivedEmail(booking);
 
       showToast("booking",
 `Booking submitted successfully.
@@ -1269,7 +1269,7 @@ ${booking.email}`,
 
       const fresh = await fetchBookingFresh(id);
       if (fresh && fresh.status === "approved" && fresh.allocatedRoomKey){
-        // await sendApprovedEmail(fresh);
+        await sendApprovedEmail(fresh);
         showToast("admin","Allocation email sent.");
       } else {
         showToast("admin","Approved, but allocation details not found yet.", "error");
@@ -1502,6 +1502,4 @@ ${booking.email}`,
 </script>
 </body>
 </html>
-
-
 
